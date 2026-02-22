@@ -77,7 +77,7 @@ const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
   if (!open || !user) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col w-80 shadow-2xl rounded-lg overflow-hidden border border-border bg-background">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col w-[85vw] sm:w-80 max-w-sm shadow-2xl rounded-lg overflow-hidden border border-border bg-background">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 bg-primary text-primary-foreground">
         <div 
@@ -87,7 +87,7 @@ const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
           <img
             src={user.avatar}
             alt={user.name}
-            className="w-8 h-8 rounded-full object-cover grayscale"
+            className="w-8 h-8 rounded-full object-cover"
           />
           <span className="font-medium text-sm">{user.name}</span>
         </div>
@@ -115,7 +115,7 @@ const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
       {!minimized && (
         <>
           {/* Messages */}
-          <ScrollArea className="h-72 px-3 py-2" ref={scrollRef}>
+          <ScrollArea className="h-[50vh] sm:h-72 max-h-80 px-3 py-2" ref={scrollRef}>
             <div className="space-y-3">
               {messages.map((message) => (
                 <div

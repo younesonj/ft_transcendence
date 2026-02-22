@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPreferences, UserProfile, generateId, setCurrentUser } from "@/lib/matching";
+import CurrencySelect from "@/components/CurrencySelect";
 
 interface PreferenceOption {
   key: keyof UserPreferences;
@@ -38,6 +39,19 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
   const [bio, setBio] = useState(existingProfile?.bio || "");
   const [moveInDate, setMoveInDate] = useState(existingProfile?.moveInDate || "");
   const [budget, setBudget] = useState(existingProfile?.budget || "");
+  const [currency, setCurrency] = useState("€");
+  const [avatarPreview, setAvatarPreview] = useState(existingProfile?.avatar || "");
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   const [preferences, setPreferences] = useState<UserPreferences>(
     existingProfile?.preferences || {
       smoking: false,
@@ -66,7 +80,7 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
       age: parseInt(age) || 0,
       location,
       bio,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
+      avatar: avatarPreview || `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
       moveInDate,
       budget,
       preferences,
@@ -85,6 +99,31 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Avatar Upload */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative group cursor-pointer">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-primary/30 bg-white/5">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl text-muted-foreground">
+                    📷
+                  </div>
+                )}
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <span className="text-xs font-medium text-white">Change</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">Click to upload a photo</p>
+          </div>
+
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -138,14 +177,17 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
             </div>
             <div className="space-y-2">
               <Label htmlFor="budget">Budget</Label>
-              <Input
-                id="budget"
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                placeholder="e.g., €500-700/mo"
-                required
-                className="bg-white/5 border-white/10"
-              />
+              <div className="flex gap-2">
+                <CurrencySelect value={currency} onChange={setCurrency} />
+                <Input
+                  id="budget"
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value)}
+                  placeholder="e.g. 500-700/mo"
+                  required
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
             </div>
           </div>
 

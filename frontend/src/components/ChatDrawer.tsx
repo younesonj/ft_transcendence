@@ -84,7 +84,7 @@ const ChatDrawer = ({ open, onOpenChange, user }: ChatDrawerProps) => {
               <img
                 src={user.avatar}
                 alt={user.name}
-                className="w-10 h-10 rounded-full object-cover grayscale"
+                className="w-10 h-10 rounded-full object-cover"
               />
               <DrawerTitle className="text-lg">{user.name}</DrawerTitle>
             </div>

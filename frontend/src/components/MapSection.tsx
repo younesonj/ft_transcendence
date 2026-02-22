@@ -283,8 +283,8 @@ const MapSection = () => {
                 relative overflow-hidden retro-border bg-card
                 transition-all duration-300 ease-out cursor-pointer
                 ${isExpanded
-                  ? 'w-full max-w-4xl h-72 md:h-96'
-                  : 'w-20 h-20 [&_.leaflet-control-container]:hidden'
+                  ? 'w-full max-w-5xl aspect-[16/9]'
+                  : 'w-16 sm:w-20 h-16 sm:h-20 [&_.leaflet-control-container]:hidden'
                 }
               `}
               onPointerEnter={handleEnter}

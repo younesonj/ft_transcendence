@@ -10,7 +10,7 @@ const PageLayout = ({ children, className = "" }: PageLayoutProps) => {
     <div className={`min-h-screen bg-background relative overflow-hidden ${className}`}>
       {/* Retro pixel art background with color grading */}
       <div 
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-40 grayscale"
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-40"
         style={{ backgroundImage: `url(${retroCityBg})` }}
       />
       
@@ -22,8 +22,8 @@ const PageLayout = ({ children, className = "" }: PageLayoutProps) => {
       <div className="fixed inset-0 bg-background/60" />
       
       {/* Ambient glow effects */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-glow" />
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-glow" style={{ animationDelay: '1.5s' }} />
+      <div className="fixed top-0 left-1/4 w-[25vw] h-[25vw] bg-primary/10 rounded-full blur-3xl animate-glow" />
+      <div className="fixed bottom-0 right-1/4 w-[25vw] h-[25vw] bg-secondary/10 rounded-full blur-3xl animate-glow" style={{ animationDelay: '1.5s' }} />
       
       {/* Fixed top ticker - always visible */}
       <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden py-2 bg-background/80 backdrop-blur-sm border-b border-white/5">

@@ -17,7 +17,7 @@ const sampleProfiles: UserProfile[] = [
     age: 24,
     location: "Paris 13e",
     bio: "42 student in my second year. Love coding late nights but always respect quiet hours. Looking for a chill roommate who's okay with occasional gaming sessions!",
-    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop",
+    avatar: "/public/mrrobot.jpg",
     moveInDate: "Feb 2026",
     budget: "€600-800/mo",
     preferences: {
@@ -39,7 +39,7 @@ const sampleProfiles: UserProfile[] = [
     age: 22,
     location: "Paris 14e",
     bio: "New to 42, excited to meet people! I'm an early bird who enjoys cooking and keeping shared spaces tidy. Open to sharing meals!",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop",
+    avatar: "/public/mrrobot.jpg",
     moveInDate: "Mar 2026",
     budget: "€500-700/mo",
     preferences: {
@@ -61,7 +61,7 @@ const sampleProfiles: UserProfile[] = [
     age: 26,
     location: "Paris 15e",
     bio: "Third year at 42. I work remote sometimes so need a quiet space during the day. Love weekend hangouts and board games!",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop",
+    avatar: "/public/mrrobot.jpg",
     moveInDate: "Feb 2026",
     budget: "€700-900/mo",
     preferences: {
@@ -83,7 +83,7 @@ const sampleProfiles: UserProfile[] = [
     age: 23,
     location: "Paris 12e",
     bio: "First year at 42, love music and yoga. Looking for a peaceful living environment with like-minded people.",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop",
+    avatar: "/public/mrrobot.jpg",
     moveInDate: "Apr 2026",
     budget: "€550-750/mo",
     preferences: {
@@ -105,7 +105,7 @@ const sampleProfiles: UserProfile[] = [
     age: 25,
     location: "Paris 11e",
     bio: "Second year dev at 42. Night coder, coffee addict, and I make a mean pasta. Always down for a movie night!",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop",
+    avatar: "/public/mrrobot.jpg",
     moveInDate: "Feb 2026",
     budget: "€600-850/mo",
     preferences: {

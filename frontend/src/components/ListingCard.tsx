@@ -24,7 +24,7 @@ const ListingCard = ({ listing }: ListingCardProps) => {
   return (
     <div className="glass rounded-2xl overflow-hidden hover:scale-[1.02] transition-all duration-300">
       {/* Image */}
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative aspect-[16/9] overflow-hidden">
         <img
           src={listing.image}
           alt={listing.title}
@@ -76,7 +76,7 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             <img 
               src={listing.posterAvatar} 
               alt={listing.postedBy}
-              className="w-8 h-8 rounded-full object-cover grayscale"
+              className="w-8 h-8 rounded-full object-cover"
             />
             <span className="text-sm text-muted-foreground">{listing.postedBy}</span>
           </div>

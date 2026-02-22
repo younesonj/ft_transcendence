@@ -56,7 +56,7 @@ const MatchCard = ({ user, onChatClick }: MatchCardProps) => {
         <img
           src={user.avatar}
           alt={user.name}
-          className="w-16 h-16 rounded-xl object-cover grayscale"
+          className="w-16 h-16 rounded-xl object-cover"
         />
         <div className="flex-1">
           <h3 className="text-xl font-bold text-foreground">
