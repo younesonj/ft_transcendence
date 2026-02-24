@@ -15,8 +15,8 @@ FROM nginx:alpine
 # Copy build output to nginx's html directory
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config if you have routing needs (optional)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3003
 
