@@ -1,4 +1,4 @@
-# --- STAGE 1: The Build Environment (The Kitchen) ---
+# --- STAGE 1: The Build Environment ---
 FROM node:20-bullseye-slim AS builder
 WORKDIR /app
 
@@ -12,24 +12,25 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# --- STAGE 2: The Production Image (The Dining Room) ---
+# --- STAGE 2: The Production Image ---
 FROM node:20-bullseye-slim
 WORKDIR /app
 
-# Security: Run as a non-privileged user
-RUN apt-get update && apt-get install -y curl openssl
-RUN useradd -m devops_user
+# Install runtime dependencies and create user
+RUN apt-get update && apt-get install -y curl openssl && \
+    useradd -m devops_user && \
+    rm -rf /var/lib/apt/lists/*
 
-# We ONLY copy the specific artifacts we need from the builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
+# Fix: Set ownership DURING the copy process
+# This eliminates the need for the slow 'RUN chown -R' line
+COPY --chown=devops_user:devops_user --from=builder /app/dist ./dist
+COPY --chown=devops_user:devops_user --from=builder /app/node_modules ./node_modules
+COPY --chown=devops_user:devops_user --from=builder /app/package.json ./package.json
+COPY --chown=devops_user:devops_user --from=builder /app/prisma ./prisma
 
-# Change ownership to devops_user
-RUN chown -R devops_user:devops_user /app
-
+# Switch user before running the app
 USER devops_user
 
 EXPOSE ${USER_SERVICE_PORT}
-CMD ["sh", "-c", "npx prisma generate && node dist/main.js"]
+# Note: Since you copied node_modules, make sure prisma engines are included
+CMD ["node", "dist/main.js"]
