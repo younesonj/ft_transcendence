@@ -1,5 +1,5 @@
 # --- STAGE 1: The Build Environment (The Kitchen) ---
-FROM node:20-slim AS builder
+FROM node:20-bullseye-slim AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # --- STAGE 2: The Production Image (The Dining Room) ---
-FROM node:20-slim
+FROM node:20-bullseye-slim
 WORKDIR /app
 
 # Security: Run as a non-privileged user

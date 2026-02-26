@@ -1,5 +1,5 @@
 # Everything happens in one stage
-FROM node:20-slim
+FROM node:20-bullseye-slim
 
 WORKDIR /app
 

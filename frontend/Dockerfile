@@ -1,5 +1,5 @@
 # --- STAGE 1: Build React app ---
-FROM node:20-slim AS builder
+FROM node:20-bullseye-slim AS builder
 WORKDIR /app
 
 # Copy package files and install dependencies
