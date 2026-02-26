@@ -100,6 +100,23 @@ services:
       - .env
     networks:
       - microservices_network
+  listings:
+    container_name: listings
+    build: services/listings
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    image: listings
+    restart: unless-stopped
+    ports:
+      - "${LISTINGS_SERVICE_PORT}:${LISTINGS_SERVICE_PORT}"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://listings:3005/api/listings" ]
+      interval: 2s
+      timeout: 5s
+      retries: 2
+    env_file:
+      - .env
+    networks:
+      - microservices_network
 
   postgres:
     image: postgres:16
