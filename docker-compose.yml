@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     entrypoint: ["nginx", "-g", "daemon off;"]
     ports:
+      - "80:80"
       - "443:443"
       - "80:80"
     volumes:
@@ -260,4 +261,3 @@ networks:
 volumes:
   postgres_data:
     driver: local
-
