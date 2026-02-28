@@ -9,7 +9,7 @@ import PageLayout from "@/components/PageLayout";
 
 const Login = () => {
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [identifier, setIdentifier] = useState(""); // email or username
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +32,7 @@ const Login = () => {
     setLoading(true);
     (async () => {
       try {
-        // Pass identifier (email or username) to login
-        await login(identifier, password);
+        await login(email, password);
         navigate('/profile');
       } catch (err: any) {
         let msg = err?.message || 'Hmm… that didn’t work.';
@@ -100,7 +99,7 @@ const Login = () => {
                   className="w-full gap-2 glass border-white/10 text-foreground hover:bg-white/5 font-semibold py-6 rounded-xl"
                 >
                   <Mail className="w-5 h-5" />
-                  Login with Email or Username
+                  Login with Email
                 </Button>
               </div>
               {/* Signup prompt always visible in main login portal */}
@@ -127,10 +126,10 @@ const Login = () => {
               
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                 <Input
-                  type="text"
-                  placeholder="Email or Username"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="glass border-white/10 bg-white/5 text-foreground rounded-xl"
                   required
                 />

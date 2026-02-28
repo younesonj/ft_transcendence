@@ -89,8 +89,9 @@ axiosInstance.interceptors.response.use(
         error.response.data?.error ||
         error.message;
 
-      // Auto logout on 401
-      if (error.response.status === 401) {
+      // Auto logout on 401 only when a token exists.
+      // This prevents redirect loops for guest pages that probe protected endpoints.
+      if (error.response.status === 401 && getAuthToken()) {
         setAuthToken(null);
         window.location.href = "/login";
       }

@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CTA = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-24 px-6 relative">
       <div className="container mx-auto">
@@ -25,7 +28,8 @@ const CTA = () => {
             
             <Button 
               size="lg" 
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 rounded-full glow-primary"
+              onClick={() => navigate("/signup")}
+              className="gap-2 bg-primary hover:bg-black text-black hover:text-primary border-black hover:border-black font-semibold px-8 rounded-full"
             >
               Connect with 42 Intra
               <ArrowRight className="w-4 h-4" />

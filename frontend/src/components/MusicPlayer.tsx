@@ -3,7 +3,7 @@ import { Play, Pause, Volume2, VolumeX, GripHorizontal } from "lucide-react";
 
 const DEFAULT_TRACK = {
   name: "mix",
-  url: "/public/chet.mp3", 
+  url: "/chet.mp3",
 };
 
 export default function MusicPlayer() {
@@ -42,11 +42,12 @@ export default function MusicPlayer() {
 
     if (playing) {
       audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+      setPlaying(false);
+      return;
     }
 
-    setPlaying(!playing);
+    void audioRef.current.play();
+    setPlaying(true);
   };
 
   // Start drag

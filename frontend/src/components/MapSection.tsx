@@ -250,7 +250,7 @@ const MapSection = () => {
           <div className="inline-block retro-border bg-card px-6 py-3 mb-6">
             <h2 className="text-2xl md:text-3xl font-bold uppercase flex items-center gap-3">
               <Globe className="w-6 h-6 text-accent" />
-              <span>World Map</span>
+              <span>42 World Map</span>
               <Globe className="w-6 h-6 text-accent" />
             </h2>
           </div>

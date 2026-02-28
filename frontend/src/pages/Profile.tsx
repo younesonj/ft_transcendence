@@ -124,8 +124,7 @@ const Profile = () => {
     (async () => {
       // Try fetching authenticated user from backend
       try {
-        const response = await api.fetchCurrentUser();
-        const apiUser = response.data;
+        const apiUser = await api.fetchCurrentUser();
         if (apiUser) {
           setCurrentUser(apiUser);
           storeCurrentUser(apiUser);

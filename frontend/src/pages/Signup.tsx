@@ -8,7 +8,7 @@ import PageLayout from "@/components/PageLayout";
 
 const Signup = () => {
   const [showForm, setShowForm] = useState(false);
-  const [identifier, setIdentifier] = useState(""); // email OR username
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -38,7 +38,7 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      await signup(identifier, password);
+      await signup(email, password);
       navigate("/profile");
     } catch (err: any) {
       let msg = err?.message || "Something went wrong.";
@@ -131,10 +131,10 @@ const Signup = () => {
 
               <form onSubmit={handleSignup} className="space-y-4">
                 <Input
-                  type="text"
-                  placeholder="Email or Username"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="glass border-white/10 bg-white/5 text-foreground rounded-xl"
                   required
                 />

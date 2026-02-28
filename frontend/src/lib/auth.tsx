@@ -5,8 +5,8 @@ import API from "@/lib/apiEndpoints";
 
 interface AuthContextType {
   user: any;
-  login: (identifier: string, password: string) => Promise<void>;
-  signup: (identifier: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -27,9 +27,9 @@ export function AuthProvider({ children }: any) {
     }
   }, []);
 
-  const login = async (identifier: string, password: string) => {
+  const login = async (email: string, password: string) => {
     const res = await api.post(API.auth.login, {
-      email: identifier, // if backend only accepts email
+      email: email.trim(),
       password,
     });
 
@@ -37,12 +37,11 @@ export function AuthProvider({ children }: any) {
     setUser(res.user);
   };
 
-  const signup = async (identifier: string, password: string) => {
-    const payload = identifier.includes("@")
-      ? { email: identifier, password }
-      : { username: identifier, password };
-
-    const res = await api.post(API.auth.signup, payload);
+  const signup = async (email: string, password: string) => {
+    const res = await api.post(API.auth.signup, {
+      email: email.trim(),
+      password,
+    });
 
     if (res?.access_token) {
       setAuthToken(res.access_token);
