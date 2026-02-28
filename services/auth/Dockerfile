@@ -5,10 +5,10 @@ WORKDIR /app
 # Install OpenSSL for Prisma
 RUN apt-get update -y && apt-get install -y openssl
 
-COPY package*.json ./
-COPY prisma ./prisma/
+COPY services/auth/package*.json ./
+COPY ./prisma ./prisma/
 RUN npm install
-COPY . .
+COPY services/auth/. ./
 RUN npx prisma generate
 RUN npm run build
 
@@ -26,9 +26,6 @@ COPY --chown=devops_user:devops_user --from=builder /app/dist ./dist
 COPY --chown=devops_user:devops_user --from=builder /app/node_modules ./node_modules
 COPY --chown=devops_user:devops_user --from=builder /app/package.json ./package.json
 COPY --chown=devops_user:devops_user --from=builder /app/prisma ./prisma
-
-# Change ownership to devops_user
-
 
 USER devops_user
 

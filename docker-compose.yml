@@ -8,6 +8,7 @@ services:
     entrypoint: ["nginx", "-g", "daemon off;"]
     ports:
       - "443:443"
+      - "80:80"
     volumes:
       - ./infrastructure/nginx/certs:/etc/nginx/certs:ro
     healthcheck:
@@ -41,14 +42,16 @@ services:
   auth:
     container_name: auth
     platform: ${DOCKER_PLATFORM:-linux/amd64}
-    build: services/auth
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
     restart: unless-stopped
     image: auth
-    # ports:
-    #   - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
-    #   - "5555:5555"  # Prisma Studio port
+    ports:
+      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
+      - "5555:5555"  # Prisma Studio port
     volumes:
-      - ./services/auth/prisma:/app/prisma
+      - ./prisma:/app/prisma
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://auth:3004/api/auth" ]
       interval: 2s
@@ -66,12 +69,14 @@ services:
         condition: service_healthy
   chat:
     container_name: chat
-    build: services/chat
+    build:
+      context: .
+      dockerfile: services/chat/Dockerfile
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: chat
     restart: unless-stopped
-    # ports:
-    #   - "${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}"
+    ports:
+      - "${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://chat:3001/api/chat" ]
       interval: 2s
@@ -81,14 +86,18 @@ services:
       - .env
     networks:
       - microservices_network
+    volumes:
+      - ./prisma:/app/prisma
   user:
     container_name: user
-    build: services/user_management
+    build:
+      context: .
+      dockerfile: services/user_management/Dockerfile
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: user
     restart: unless-stopped
-    # ports:
-    #   - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
+    ports:
+      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://user:3002/api/users" ]
       interval: 2s
@@ -98,14 +107,18 @@ services:
       - .env
     networks:
       - microservices_network
+    volumes:
+      - ./prisma:/app/prisma
   listings:
     container_name: listings
-    build: services/listings
+    build:
+      context: .
+      dockerfile: services/listings/Dockerfile
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: listings
     restart: unless-stopped
-    # ports:
-    #   - "${LISTINGS_SERVICE_PORT}:${LISTINGS_SERVICE_PORT}"
+    ports:
+      - "${LISTINGS_SERVICE_PORT}:${LISTINGS_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://listings:3005/api/listings" ]
       interval: 2s
@@ -115,7 +128,8 @@ services:
       - .env
     networks:
       - microservices_network
-
+    volumes:
+      - ./prisma:/app/prisma
   postgres:
     image: postgres:16
     platform: ${DOCKER_PLATFORM:-linux/amd64}
