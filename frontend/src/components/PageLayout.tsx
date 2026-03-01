@@ -27,7 +27,7 @@ const PageLayout = ({ children, className = "" }: PageLayoutProps) => {
       
       {/* Fixed top ticker - always visible */}
       <div className="fixed top-0 left-0 right-0 z-50 overflow-hidden py-2 bg-background/80 backdrop-blur-sm border-b border-white/5">
-        <div className="marquee text-xs whitespace-nowrap font-medium tracking-wider opacity-70">
+        <div className="top-marquee text-xs whitespace-nowrap font-medium tracking-wider opacity-70">
           <span className="text-primary">✦ WELCOME TO 42ROOMMATES</span>
           <span className="text-muted-foreground mx-6">—</span>
           <span className="text-secondary">EXCLUSIVE FOR 1337/42 STUDENTS</span>

@@ -16,14 +16,14 @@ const Signup = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, startOAuth } = useAuth();
 
   const handle42Signup = () => {
-    console.log("42 OAuth signup triggered");
+    startOAuth("42");
   };
 
   const handleGoogleSignup = () => {
-    console.log("Google OAuth signup triggered");
+    startOAuth("google");
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -70,9 +70,13 @@ const Signup = () => {
             <>
               {/* Icon */}
               <div className="flex items-center justify-center mb-4">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center font-bold text-2xl text-primary-foreground">
+                <Link
+                  to="/"
+                  aria-label="Go to home page"
+                  className="w-[3.25rem] h-[3.25rem] rounded-2xl bg-[#37e07a] flex items-center justify-center font-bold text-base sm:text-lg text-black hover:bg-[#2fd46f] transition-colors"
+                >
                   42
-                </div>
+                </Link>
               </div>
 
               <p className="text-muted-foreground text-sm mb-6">

@@ -114,7 +114,7 @@ axiosInstance.interceptors.response.use(
 ================================ */
 
 export async function login(credentials: {
-  email: string;
+  identifier: string;
   password: string;
 }) {
   return axiosInstance.post<{

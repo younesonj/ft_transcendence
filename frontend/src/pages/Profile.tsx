@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   UserProfile,
+  UserPreferences,
   getCurrentUser,
   getMatchedProfiles,
   saveProfile,
@@ -117,6 +118,50 @@ const preferenceEmojiMap: Record<string, { emoji: string; label: string }> = {
   clean: { emoji: "🧹", label: "Clean" },
 };
 
+const emptyPreferences: UserPreferences = {
+  smoking: false,
+  quietHours: false,
+  earlyBird: false,
+  nightOwl: false,
+  petsOk: false,
+  cooking: false,
+  gaming: false,
+  social: false,
+  studious: false,
+  clean: false,
+};
+
+const normalizeUserProfile = (user: any): UserProfile | null => {
+  if (!user) return null;
+
+  return {
+    id: String(user.id ?? ""),
+    username: user.username || "",
+    name: user.name || user.firstName || "",
+    sex: user.sex,
+    age: Number(user.age) || 0,
+    location: user.location || "",
+    bio: user.bio || "",
+    avatar: user.avatar || "",
+    moveInDate: user.moveInDate || "",
+    budget: user.budget || "",
+    preferences: user.preferences || { ...emptyPreferences },
+  };
+};
+
+const isProfileComplete = (user: UserProfile | null) => {
+  if (!user) return false;
+  return Boolean(
+    user.name?.trim() &&
+    user.age > 0 &&
+    user.location?.trim() &&
+    user.bio?.trim() &&
+    user.moveInDate?.trim() &&
+    user.budget?.trim() &&
+    user.preferences
+  );
+};
+
 const Profile = () => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [matches, setMatches] = useState<Array<UserProfile & { matchScore: number }>>([]);
@@ -135,20 +180,23 @@ const Profile = () => {
       // Try fetching authenticated user from backend
       try {
         const apiUser = await api.fetchCurrentUser();
-        if (apiUser) {
-          setCurrentUser(apiUser);
-          storeCurrentUser(apiUser);
-          setMatches(getMatchedProfiles(apiUser));
+        const normalizedApiUser = normalizeUserProfile(apiUser);
+        if (normalizedApiUser) {
+          setCurrentUser(normalizedApiUser);
+          storeCurrentUser(normalizedApiUser);
+          setShowSetup(!isProfileComplete(normalizedApiUser));
+          setMatches(isProfileComplete(normalizedApiUser) ? getMatchedProfiles(normalizedApiUser) : []);
           return;
         }
       } catch (err) {
         // fallback to local stored user
       }
 
-      const user = getCurrentUser();
-      setCurrentUser(user);
-      if (user) {
-        setMatches(getMatchedProfiles(user));
+      const localUser = normalizeUserProfile(getCurrentUser());
+      setCurrentUser(localUser);
+      if (localUser) {
+        setShowSetup(!isProfileComplete(localUser));
+        setMatches(isProfileComplete(localUser) ? getMatchedProfiles(localUser) : []);
       }
     })();
   }, []);

@@ -5,8 +5,10 @@ import API from "@/lib/apiEndpoints";
 
 interface AuthContextType {
   user: any;
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  startOAuth: (provider: "google" | "42") => void;
+  completeOAuthLogin: (token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -27,9 +29,9 @@ export function AuthProvider({ children }: any) {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     const res = await api.post(API.auth.login, {
-      email: email.trim(),
+      identifier: identifier.trim(),
       password,
     });
 
@@ -38,25 +40,46 @@ export function AuthProvider({ children }: any) {
   };
 
   const signup = async (email: string, password: string) => {
-    const res = await api.post(API.auth.signup, {
+    await api.post(API.auth.signup, {
       email: email.trim(),
       password,
     });
+    await login(email, password);
+  };
 
-    if (res?.access_token) {
-      setAuthToken(res.access_token);
+  const getAuthBaseUrl = () => {
+    const configuredBase = (api.defaults.baseURL as string | undefined) || "";
+
+    if (!configuredBase) {
+      return window.location.origin;
     }
 
-    if (res?.user) {
-      setUser(res.user);
-      return;
+    if (/^https?:\/\//i.test(configuredBase)) {
+      return configuredBase;
     }
+
+    const normalizedBase = configuredBase.startsWith("/")
+      ? configuredBase
+      : `/${configuredBase}`;
+    return `${window.location.origin}${normalizedBase}`;
+  };
+
+  const startOAuth = (provider: "google" | "42") => {
+    const endpoint = provider === "google" ? API.auth.google : API.auth.intra42;
+    const redirectUrl = new URL(endpoint, getAuthBaseUrl()).toString();
+    window.location.assign(redirectUrl);
+  };
+
+  const completeOAuthLogin = async (token: string) => {
+    setAuthToken(token);
 
     try {
       const me = await api.get(API.users.me);
       setUser(me);
+      return;
     } catch {
-      setUser(null);
+      const fallback = await api.get(API.auth.profile);
+      setUser(fallback?.user ?? fallback);
     }
   };
 
@@ -66,7 +89,7 @@ export function AuthProvider({ children }: any) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, login, signup, startOAuth, completeOAuthLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -15,16 +15,14 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handle42Login = () => {
-    // TODO: Implement 42 OAuth when API is ready
-    console.log("42 OAuth login triggered");
+    startOAuth("42");
   };
 
   const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth when API is ready
-    console.log("Google OAuth login triggered");
+    startOAuth("google");
   };
 
-  const { login } = useAuth();
+  const { login, startOAuth } = useAuth();
 
   const handleEmailLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,9 +63,13 @@ const Login = () => {
             <>
               {/* 42 Intra Login */}
               <div className="flex items-center justify-center mb-4">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center font-bold text-2xl text-primary-foreground">
+                <Link
+                  to="/"
+                  aria-label="Go to home page"
+                  className="w-[3.25rem] h-[3.25rem] rounded-2xl bg-[#37e07a] flex items-center justify-center font-bold text-base sm:text-lg text-black hover:bg-[#2fd46f] transition-colors"
+                >
                   42
-                </div>
+                </Link>
               </div>
               <p className="text-muted-foreground text-sm mb-6">
                 login with your preferred method
@@ -126,8 +128,8 @@ const Login = () => {
               
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                 <Input
-                  type="email"
-                  placeholder="Email"
+                  type="text"
+                  placeholder="Email or username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="glass border-white/10 bg-white/5 text-foreground rounded-xl"
