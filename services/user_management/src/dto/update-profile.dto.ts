@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength, Min, Max, IsInt } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -7,15 +7,15 @@ export class UpdateProfileDto {
   @MaxLength(20, { message: 'Username must not exceed 20 characters' })
   username?: string;
 
-  @IsOptional()
   @IsString()
-  @MaxLength(50, { message: 'First name must not exceed 50 characters' })
-  firstName?: string;
+  @IsOptional()
+  name?: string;  // ← Changed from firstName/lastName
 
+  @IsInt()
   @IsOptional()
-  @IsString()
-  @MaxLength(50, { message: 'Last name must not exceed 50 characters' })
-  lastName?: string;
+  @Min(18)
+  @Max(100)
+  age?: number;  // ← NEW
 
   @IsOptional()
   @IsString()

@@ -13,46 +13,43 @@ export class AppService {
         return 'Hello from Auth Service!';
     }
 
+    //sigup
     async signup(signupDto: SignupDto) {
-        const { email, username, password, firstName, lastName } = signupDto;
+        const { email, password } = signupDto;
 
-        // Step 1: Check if user already exists
-        const existingUser = await this.prisma.user.findFirst({
-            where: {
-                OR: [
-                    { email: email },
-                    { username: username }
-                ],
-            },
+        // Check if email already exists
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email },
         });
 
         if (existingUser) {
-            throw new ConflictException('Email or username already exists');
+            throw new ConflictException('Email already exists');
         }
 
-        // Step 2: Hash the password
+        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Step 3: Create user in database
+        // Create user with minimal info
+        // Username will be set during profile completion
+        const tempUsername = `user_${Date.now()}`; // Temporary, will be changed in profile
+
         const user = await this.prisma.user.create({
             data: {
                 email,
-                username,
+                username: tempUsername,  // Temporary unique username
                 password: hashedPassword,
-                firstName,
-                lastName,
-                // Default values are handled by Prisma schema
+                // name, age, bio will be filled in profile completion
             },
         });
 
-        // Step 4: Remove password from response
+        // Remove password from response
         const { password: _, ...result } = user;
+
         return {
             message: 'User created successfully',
             user: result,
         };
     }
-
 
     // ========== LOGIN ==========
     async login(loginDto: LoginDto) {
@@ -144,8 +141,6 @@ export class AppService {
                 data: {
                     email: oauthUser.email,
                     username: oauthUser.username || `user_${Date.now()}`,
-                    firstName: oauthUser.firstName,
-                    lastName: oauthUser.lastName,
                     intra42Id: oauthUser.intra42Id || null,
                     googleId: oauthUser.googleId || null,
                     password: null, // OAuth users don't have passwords

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,30 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Auth service models
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  username  String   @unique
-  password  String?  // ← CHANGED: Made optional for OAuth users
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  username          String   @unique
+  password          String?
   
-  // Profile Information (NEW)
-  firstName String?
-  lastName  String?
-  avatar    String?  @default("default-avatar.png")
-  bio       String?
+  // Profile info
+  name              String?  // Full name
+  age               Int?     // Age
+  avatar            String   @default("default-avatar.png")
+  bio               String?
   
-  // OAuth Identifiers (NEW)
-  googleId  String?  @unique
-  intra42Id String?  @unique
+  // OAuth
+  googleId          String?  @unique
+  intra42Id         String?  @unique
   
-  // Account Status (NEW)
-  isOnline   Boolean  @default(false)
-  isVerified Boolean  @default(false)
-  isActive   Boolean  @default(true)
-  lastSeenAt DateTime @default(now())
+  // Status
+  isOnline          Boolean  @default(false)
+  isVerified        Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  lastSeenAt        DateTime @default(now())
   
-  // Timestamps
+  // Relations
+  preferences       UserPreferences?  // ← ADD THIS LINE
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([email])
+  @@index([username])
+}
+
+model UserPreferences {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  
+  // Location & Budget
+  location        String?
+  moveInDate      DateTime?
+  budget          Int?
+  currency        String?  @default("EUR")  // ← ADD THIS: EUR, USD, MAD, CHF, GBP, etc.
+  
+  // Lifestyle preferences
+  smoker          Boolean  @default(false)
+  quietHours      Boolean  @default(false)
+  earlyBird       Boolean  @default(false)
+  nightOwl        Boolean  @default(false)
+  petFriendly     Boolean  @default(false)
+  cooks           Boolean  @default(false)
+  gamer           Boolean  @default(false)
+  social          Boolean  @default(false)
+  studious        Boolean  @default(false)
+  clean           Boolean  @default(false)
+  
+  user User @relation(fields: [userId], references: [id])
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

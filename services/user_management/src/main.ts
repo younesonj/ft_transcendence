@@ -8,10 +8,19 @@ async function bootstrap() {
     
     // ========== ENABLE CORS ==========
     app.enableCors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3003', // Your frontend URL
+        origin: [
+            'https://localhost',
+            'https://localhost:443',
+            'http://localhost',
+            'http://localhost:3003',
+            process.env.FRONTEND_URL,
+        ].filter(Boolean),
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
+        preflightContinue: false,
+        optionsSuccessStatus: 204,
     });
-
     // Enable validation
     app.useGlobalPipes(new ValidationPipe({
         whitelist: true,
