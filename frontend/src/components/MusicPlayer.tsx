@@ -6,6 +6,11 @@ const DEFAULT_TRACK = {
   url: "/chet.mp3",
 };
 
+const HANDLE_SIZE = 40;
+const PANEL_WIDTH = 170;
+const EDGE_MARGIN = 8;
+const TOP_SAFE_OFFSET = 44;
+
 export default function MusicPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -15,7 +20,14 @@ export default function MusicPlayer() {
   const [open, setOpen] = useState(false);
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [pos, setPos] = useState({ x: 0, y: window.innerHeight / 2 - 20 });
+  const [viewport, setViewport] = useState(() => ({
+    w: window.innerWidth,
+    h: window.innerHeight,
+  }));
+  const [pos, setPos] = useState(() => ({
+    x: EDGE_MARGIN,
+    y: Math.max(TOP_SAFE_OFFSET, window.innerHeight / 2 - HANDLE_SIZE / 2),
+  }));
   const dragging = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -25,6 +37,19 @@ export default function MusicPlayer() {
   const [stretch, setStretch] = useState({ scaleY: 1, skewX: 0 });
 
   const lastPos = useRef(pos);
+
+  const clampPos = useCallback((nextX: number, nextY: number) => {
+    const maxX = Math.max(EDGE_MARGIN, viewport.w - HANDLE_SIZE - EDGE_MARGIN);
+    const maxY = Math.max(
+      TOP_SAFE_OFFSET,
+      viewport.h - HANDLE_SIZE - EDGE_MARGIN
+    );
+
+    return {
+      x: Math.min(Math.max(EDGE_MARGIN, nextX), maxX),
+      y: Math.min(Math.max(TOP_SAFE_OFFSET, nextY), maxY),
+    };
+  }, [viewport.w, viewport.h]);
 
   // Load audio
   useEffect(() => {
@@ -56,6 +81,31 @@ export default function MusicPlayer() {
       audioRef.current.volume = muted ? 0 : volume;
     }
   }, [volume, muted]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const nextViewport = { w: window.innerWidth, h: window.innerHeight };
+      setViewport(nextViewport);
+      setPos((prev) => {
+        const maxX = Math.max(
+          EDGE_MARGIN,
+          nextViewport.w - HANDLE_SIZE - EDGE_MARGIN
+        );
+        const maxY = Math.max(
+          TOP_SAFE_OFFSET,
+          nextViewport.h - HANDLE_SIZE - EDGE_MARGIN
+        );
+
+        return {
+          x: Math.min(Math.max(EDGE_MARGIN, prev.x), maxX),
+          y: Math.min(Math.max(TOP_SAFE_OFFSET, prev.y), maxY),
+        };
+      });
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const toggle = async () => {
     if (!audioRef.current) return;
@@ -98,8 +148,9 @@ export default function MusicPlayer() {
       if (!dragging.current) return;
       hasDragged.current = true;
 
-      const newX = Math.max(0, e.clientX - dragOffset.current.x);
-      const newY = Math.max(0, e.clientY - dragOffset.current.y);
+      const rawX = e.clientX - dragOffset.current.x;
+      const rawY = e.clientY - dragOffset.current.y;
+      const { x: newX, y: newY } = clampPos(rawX, rawY);
 
       // Calculate velocity for drape effect
       const dy = newY - lastPos.current.y;
@@ -128,7 +179,10 @@ export default function MusicPlayer() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, []);
+  }, [clampPos]);
+
+  const shouldOpenLeft =
+    pos.x + HANDLE_SIZE + PANEL_WIDTH > viewport.w - EDGE_MARGIN;
 
   return (
     <div
@@ -159,10 +213,16 @@ export default function MusicPlayer() {
 
       {/* Popup panel */}
       <div
-        className={`ml-0 rounded-r-2xl px-4 py-3 flex items-center gap-3 text-white transition-all duration-300 origin-left ${
+        className={`absolute top-1/2 -translate-y-1/2 px-4 py-3 flex items-center gap-3 text-white transition-all duration-300 ${
+          shouldOpenLeft
+            ? "right-full mr-2 origin-right rounded-l-2xl"
+            : "left-full ml-0 origin-left rounded-r-2xl"
+        } ${
           open
             ? "opacity-100 scale-x-100 translate-x-0"
-            : "opacity-0 scale-x-0 -translate-x-2 pointer-events-none"
+            : shouldOpenLeft
+              ? "opacity-0 scale-x-0 translate-x-2 pointer-events-none"
+              : "opacity-0 scale-x-0 -translate-x-2 pointer-events-none"
         }`}
       >
         <button

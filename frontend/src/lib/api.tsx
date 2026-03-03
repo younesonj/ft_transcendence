@@ -56,7 +56,23 @@ type ApiClient = Omit<
 };
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // e.g. https://localhost/api
+  // Endpoints already include `/api/...`, so strip a trailing `/api` from base URL if provided.
+  baseURL: (() => {
+    const rawBase = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+
+    if (!rawBase) {
+      // When frontend is served directly (3003/8080), route API calls through nginx gateway.
+      if (
+        typeof window !== "undefined" &&
+        ["3003", "8080"].includes(window.location.port)
+      ) {
+        return "https://localhost";
+      }
+      return undefined;
+    }
+
+    return rawBase.replace(/\/+$/, "").replace(/\/api$/, "");
+  })(),
   headers: {
     "Content-Type": "application/json",
   },
