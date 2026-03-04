@@ -1,42 +1,45 @@
-# --- STAGE 1: The Build Environment (The Kitchen) ---
+# --- STAGE 1: Build ---
 FROM node:20-bullseye-slim AS builder
 WORKDIR /app
 
-# Install OpenSSL for Prisma
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
+# 1. Copy lockfile too for deterministic, cached installs
 COPY services/listings/package*.json ./
 COPY ./prisma ./prisma/
-RUN npm install
-COPY services/listings/. ./
+
+# 2. Install prod deps in a separate layer, then all deps for build
+RUN npm ci --ignore-scripts
 RUN npx prisma generate
+
+COPY services/listings/. ./
 RUN npm run build
 
-# --- STAGE 2: The Production Image (The Dining Room) ---
+# 3. Prune dev dependencies so we only carry prod deps forward
+RUN npm prune --omit=dev
+
+# --- STAGE 2: Production ---
 FROM node:20-bullseye-slim
 WORKDIR /app
 
-# Security: Run as a non-privileged user
-RUN apt-get update && apt-get install -y curl openssl && \
-    useradd -m devops_user && \
-    rm -rf /var/lib/apt/lists/*
+# Combine all apt + user setup into a single layer
+RUN apt-get update && apt-get install -y --no-install-recommends curl openssl && \
+    rm -rf /var/lib/apt/lists/* && \
+    useradd --no-log-init -m devops_user && \
+    mkdir -p /app/uploads/listings && \
+    chown -R devops_user:devops_user /app
 
-# Create upload directories with proper ownership BEFORE switching user
-RUN mkdir -p /app/uploads/listings && \
-    chown -R devops_user:devops_user /app/uploads
-
-# We ONLY copy the specific artifacts we need from the builder
+# Copy only what's needed — single COPY per logical group
 COPY --chown=devops_user:devops_user --from=builder /app/dist ./dist
 COPY --chown=devops_user:devops_user --from=builder /app/node_modules ./node_modules
-COPY --chown=devops_user:devops_user --from=builder /app/package.json ./package.json
+COPY --chown=devops_user:devops_user --from=builder /app/package.json ./
 COPY --chown=devops_user:devops_user --from=builder /app/prisma ./prisma
 
 USER devops_user
 
-# The final image HAS NO:
-# - npm cache
-# - source code (.ts files)
-# - compilers or build tools
+ENV NODE_ENV=production
 
 EXPOSE ${LISTINGS_SERVICE_PORT}
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && node dist/main.js"]
+
+# 4. Avoid npx overhead — call binaries directly & skip unnecessary prisma generate
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/main.js"]
