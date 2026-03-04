@@ -152,6 +152,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      - ./uploads:/app/uploads
   listings:
     container_name: listings
     build:
@@ -185,6 +186,9 @@ services:
       postgres:
         condition: service_healthy
 
+    volumes:
+      - ./prisma:/app/prisma
+      - ./uploads:/app/uploads
   postgres:
     image: postgres:16
     platform: ${DOCKER_PLATFORM:-linux/amd64}
