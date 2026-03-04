@@ -111,6 +111,7 @@ services:
       - microservices_network
     volumes:
       - ./prisma:/app/prisma
+      - ./uploads:/app/uploads
   listings:
     container_name: listings
     build:
