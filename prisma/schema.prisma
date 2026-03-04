@@ -31,7 +31,8 @@ model User {
   lastSeenAt        DateTime @default(now())
   
   // Relations
-  preferences       UserPreferences?  // ← ADD THIS LINE
+  preferences       UserPreferences?
+  listings          Listing[]
   
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -66,4 +67,49 @@ model UserPreferences {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Listing {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Basic Info
+  title           String
+  location        String
+  price           Int
+  currency        String   @default("EUR")
+  availableDate   DateTime
+  spotsTotal      Int
+  spotsFilled     Int      @default(0)
+  description     String   @db.Text
+  
+  // Images
+  images          String[] @default([])
+  
+  // Amenities
+  hasWifi         Boolean  @default(false)
+  hasKitchen      Boolean  @default(false)
+  hasLaundry      Boolean  @default(false)
+  hasMetroNearby  Boolean  @default(false)
+  hasGarden       Boolean  @default(false)
+  hasParking      Boolean  @default(false)
+  petsOK          Boolean  @default(false)
+  hasGym          Boolean  @default(false)
+  hasAC           Boolean  @default(false)
+  isSecure        Boolean  @default(false)
+  
+  // Status
+  isActive        Boolean  @default(true)
+  isPublished     Boolean  @default(true)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([location])
+  @@index([price])
+  @@index([availableDate])
+  @@index([isActive])
 }

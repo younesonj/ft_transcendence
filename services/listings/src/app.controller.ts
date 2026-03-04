@@ -9,13 +9,13 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @Controller()
 export class AppController {
     constructor(private readonly appService: AppService) {}
-
+    // Health check endpoint
     @Get()
     @ApiOperation({ summary: 'Health check' })
     getHello(): string {
         return this.appService.getHello();
     }
-
+    // Create new listing
     @UseGuards(JwtAuthGuard)
     @Post()
     @ApiBearerAuth()
@@ -27,14 +27,14 @@ export class AppController {
         const userId = req.user.userId;
         return this.appService.createListing(userId, createListingDto);
     }
-
+    // Get all active listings
     @Get('all')
     @ApiOperation({ summary: 'Get all active listings' })
     @ApiResponse({ status: 200, description: 'Returns all active listings' })
     async getAllListings() {
         return this.appService.getAllListings();
     }
-
+    // Get current user listings
     @UseGuards(JwtAuthGuard)
     @Get('my-listings')
     @ApiBearerAuth()
@@ -45,7 +45,7 @@ export class AppController {
         const userId = req.user.userId;
         return this.appService.getMyListings(userId);
     }
-
+    // Get listing by ID
     @Get(':id')
     @ApiOperation({ summary: 'Get listing by ID' })
     @ApiParam({ name: 'id', description: 'Listing ID' })
@@ -54,7 +54,7 @@ export class AppController {
     async getListingById(@Param('id', ParseIntPipe) id: number) {
         return this.appService.getListingById(id);
     }
-
+    // Update listing
     @UseGuards(JwtAuthGuard)
     @Patch(':id')
     @ApiBearerAuth()
@@ -73,7 +73,7 @@ export class AppController {
         const userId = req.user.userId;
         return this.appService.updateListing(id, userId, updateListingDto);
     }
-
+    // Delete listing
     @UseGuards(JwtAuthGuard)
     @Delete(':id')
     @ApiBearerAuth()
