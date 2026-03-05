@@ -54,12 +54,25 @@ export class AppService {
                 // name, age, bio will be filled in profile completion
             },
         });
+    
+
+        // ========== GENERATE JWT TOKEN ==========
+        const payload = {
+            sub: user.id,
+            email: user.email,
+
+        };
+
+        const accessToken = this.jwtService.sign(payload);
+        // =========================================
+
 
         // Remove password from response
         const { password: _, ...result } = user;
 
         return {
             message: 'User created successfully',
+            access_token: accessToken,
             user: result,
         };
     }
