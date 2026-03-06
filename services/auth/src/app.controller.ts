@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Res, HttpStatus, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { SignupDto } from './dto/signup.dto';
@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Intra42AuthGuard } from './guards/intra42-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { Response, Request } from 'express';  // ← Add Response
 
 @Controller()
 export class AppController {
@@ -40,8 +41,22 @@ export class AppController {
     })
     @ApiResponse({ status: 409, description: 'Email already exists' })
     @ApiResponse({ status: 400, description: 'Validation failed' })
-    async signup(@Body() signupDto: SignupDto) {
-        return this.appService.signup(signupDto);
+    async signup(@Body() signupDto: SignupDto, @Res() res: Response) {
+        const result = await this.appService.signup(signupDto);
+
+        // Set HTTP-Only Cookie
+        res.cookie('access_token', result.access_token, {
+            httpOnly: true,      // Can't access via JavaScript
+            secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
+            sameSite: 'strict',  // CSRF protection
+            maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days
+        });
+
+        return {
+            message: result.message,
+            user: result.user,
+            // access_token: result.access_token,  // Optional: remove this for extra security
+        };
     }
 
     @Post('login')
@@ -65,8 +80,39 @@ export class AppController {
         }
     })
     @ApiResponse({ status: 401, description: 'Invalid credentials' })
-    async login(@Body() loginDto: LoginDto) {
-        return this.appService.login(loginDto);
+    async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+        const result = await this.appService.login(loginDto);
+
+        // Set HTTP-Only Cookie
+        res.cookie('access_token', result.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        return {
+            message: result.message,
+            user: result.user,
+        };
+    }
+
+  // ========== LOGOUT (NEW) ==========
+    @Post('logout')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Logout user' })
+    @ApiResponse({ 
+        status: 200, 
+        description: 'Logged out successfully',
+        schema: {
+            example: {
+                message: 'Logged out successfully'
+            }
+        }
+    })
+    async logout(@Res({ passthrough: true }) res: Response) {
+        res.clearCookie('access_token');
+        return { message: 'Logged out successfully' };
     }
 
     // ========== NEW: PROTECTED ROUTE ==========
@@ -116,17 +162,23 @@ export class AppController {
         description: 'Handles 42 OAuth callback. Users should not call this directly.'
     })
     @ApiResponse({ status: 302, description: 'Redirects to frontend with JWT token' })
-    async callback42(@Req() req: any, @Res() res: any) {
+    async callback42(@Req() req: any, @Res() res: Response, ) {
         try {
             const result = await this.appService.oauthLogin(req.user);
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3003';
-            const redirectUrl = `${frontendUrl}/auth/callback?token=${result.access_token}`;
-            return res.redirect(redirectUrl);
+
+            // Set cookie
+            res.cookie('access_token', result.access_token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+
+            // Redirect to frontend
+            res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true`);
         } catch (error) {
-            console.error('42 OAuth Error:', error);
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3003';
-            const errorUrl = `${frontendUrl}/auth/error?message=${encodeURIComponent(error.message)}`;
-            return res.redirect(errorUrl);
+            console.error('42 OAuth error:', error);
+            res.redirect(`${process.env.FRONTEND_URL}/auth/error`);
         }
     }
    // ========== GOOGLE OAUTH ENDPOINTS ========== (ADD THESE)
@@ -149,17 +201,23 @@ export class AppController {
         description: 'Handles Google OAuth callback. Users should not call this directly.'
     })
     @ApiResponse({ status: 302, description: 'Redirects to frontend with JWT token' })
-    async callbackGoogle(@Req() req: any, @Res() res: any) {
+    async callbackGoogle(@Req() req: any, @Res() res: Response) {
         try {
             const result = await this.appService.oauthLogin(req.user);
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3003';
-            const redirectUrl = `${frontendUrl}/auth/callback?token=${result.access_token}`;
-            return res.redirect(redirectUrl);
+
+            // Set cookie
+            res.cookie('access_token', result.access_token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+
+            // Redirect to frontend
+            res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true`);
         } catch (error) {
-            console.error('Google OAuth Error:', error);
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3003';
-            const errorUrl = `${frontendUrl}/auth/error?message=${encodeURIComponent(error.message)}`;
-            return res.redirect(errorUrl);
+            console.error('Google OAuth error:', error);
+            res.redirect(`${process.env.FRONTEND_URL}/auth/error`);
         }
     }
 

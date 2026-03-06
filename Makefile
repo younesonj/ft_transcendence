@@ -1,4 +1,4 @@
-all: certs up
+all: certs up dirs
 
 dirs:
 	mkdir -p uploads/avatars uploads/listings
@@ -15,3 +15,5 @@ fclean:
 	docker compose down -v
 	
 	rm -f ./infrastructure/nginx/certs/*.crt ./infrastructure/nginx/certs/*.key
+
+	rm -rf uploads

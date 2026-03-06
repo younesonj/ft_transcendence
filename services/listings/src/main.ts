@@ -4,11 +4,17 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';  // ← ADD
 import { join } from 'path';  // ← ADD
+import * as cookieParser from 'cookie-parser'; // ← ADD
+
+
+
+
 
 async function bootstrap() {
     const port = process.env.LISTINGS_SERVICE_PORT || 3005;
     const app = await NestFactory.create<NestExpressApplication>(AppModule);  // ← CHANGE
 
+    app.use(cookieParser());
     // CORS
     app.enableCors({
         origin: [

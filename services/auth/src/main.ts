@@ -2,10 +2,13 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';  // ← ADD
+import * as cookieParser from 'cookie-parser';  // ← ADD
 
 async function bootstrap() {
     const port = process.env.AUTH_SERVICE_PORT || 3004;
     const app = await NestFactory.create(AppModule);
+
+    app.use(cookieParser());
 
     // Enable CORS - Allow NGINX origin
     app.enableCors({
