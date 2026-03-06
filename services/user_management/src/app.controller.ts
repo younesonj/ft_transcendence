@@ -67,7 +67,7 @@ export class AppController {
     }
 
     // ========== GET USER BY ID ==========
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @Get(':id')
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get user by ID' })

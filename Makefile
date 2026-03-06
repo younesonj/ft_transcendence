@@ -1,5 +1,8 @@
 all: certs up
 
+dirs:
+	mkdir -p uploads/avatars uploads/listings
+
 certs:
 	@chmod +x ./infrastructure/nginx/certs/generate_certs.sh
 	@./infrastructure/nginx/certs/generate_certs.sh
