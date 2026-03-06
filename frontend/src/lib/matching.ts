@@ -1,4 +1,5 @@
 // Simple local matching mechanism using localStorage
+import { resolveAvatar } from "@/lib/avatar";
 
 export interface UserPreferences {
   smoking: boolean;
@@ -63,7 +64,7 @@ const normalizeProfile = (profile: any): UserProfile | null => {
     age: Number(profile.age) || 0,
     location: profile.location || "",
     bio: profile.bio || "",
-    avatar: profile.avatar || "",
+    avatar: resolveAvatar(profile.avatar),
     moveInDate: profile.moveInDate || "",
     budget: profile.budget || "",
     preferences: normalizePreferences(profile.preferences || DEFAULT_PREFERENCES),

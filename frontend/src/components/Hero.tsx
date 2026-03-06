@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, Home, Users } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { useState, useEffect } from "react";
 import Autoplay from "embla-carousel-autoplay";
+import { useGlitch } from "react-powerglitch";
 import ListingCard from "@/components/ListingCard";
 import UserProfileCard from "@/components/UserProfileCard";
 import { useNavigate } from "react-router-dom";
@@ -79,6 +80,9 @@ const Hero = () => {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
+  const getStartedGlitch = useGlitch({
+    playMode: "hover",
+  });
 
   useEffect(() => {
     if (!api) return;
@@ -127,8 +131,9 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-4">
               <Button 
                 size="lg" 
+                ref={getStartedGlitch.ref}
                 onClick={() => navigate("/signup")}
-                className="group w-full sm:w-auto bg-primary hover:bg-black text-black hover:text-primary border-black hover:border-black font-semibold px-8 rounded-full glow-primary"
+                className="group w-full sm:w-auto bg-primary hover:bg-black text-black hover:text-primary border-black hover:border-black font-semibold px-8 rounded-full"
               >
                 Get Started
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />

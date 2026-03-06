@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPreferences, UserProfile, setCurrentUser } from "@/lib/matching";
 import CurrencySelect from "@/components/CurrencySelect";
 import api, { CompleteProfilePayload } from "@/lib/api";
+import { resolveAvatar } from "@/lib/avatar";
 
 interface PreferenceOption {
   key: keyof UserPreferences;
@@ -67,7 +68,7 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
   const [moveInDate, setMoveInDate] = useState(toDateInputValue(existingProfile?.moveInDate));
   const [budget, setBudget] = useState(extractBudgetValue(existingProfile?.budget));
   const [currency, setCurrency] = useState("EUR");
-  const [avatarPreview, setAvatarPreview] = useState(existingProfile?.avatar || "");
+  const [avatarPreview, setAvatarPreview] = useState(resolveAvatar(existingProfile?.avatar));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -157,10 +158,11 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
         age: Number(backendUser.age) || payload.age,
         location: backendPrefs.location || payload.location,
         bio: backendUser.bio || payload.bio,
-        avatar:
+        avatar: resolveAvatar(
           avatarPreview ||
           backendUser.avatar ||
-          `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.name}`,
+          `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.name}`
+        ),
         moveInDate: (backendPrefs.moveInDate || payload.moveInDate).slice(0, 10),
         budget: `${CURRENCY_SYMBOLS[backendPrefs.currency || payload.currency] || payload.currency}${backendPrefs.budget || payload.budget}`,
         preferences: {

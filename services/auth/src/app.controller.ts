@@ -174,8 +174,9 @@ export class AppController {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
             });
 
-            // Redirect to frontend
-            res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true`);
+            // Redirect to frontend with success + token (fallback when cookies are blocked cross-origin)
+            const token = encodeURIComponent(result.access_token);
+            res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true&token=${token}`);
         } catch (error) {
             console.error('42 OAuth error:', error);
             res.redirect(`${process.env.FRONTEND_URL}/auth/error`);
@@ -213,8 +214,9 @@ export class AppController {
                 maxAge: 7 * 24 * 60 * 60 * 1000,
             });
 
-            // Redirect to frontend
-            res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true`);
+            // Redirect to frontend with success + token (fallback when cookies are blocked cross-origin)
+            const token = encodeURIComponent(result.access_token);
+            res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true&token=${token}`);
         } catch (error) {
             console.error('Google OAuth error:', error);
             res.redirect(`${process.env.FRONTEND_URL}/auth/error`);

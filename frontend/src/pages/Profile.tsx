@@ -30,6 +30,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ProfileSetupForm from "@/components/ProfileSetupForm";
 import CreateListingForm from "@/components/CreateListingForm";
 import { useAuth } from "@/lib/auth";
+import { resolveAvatar } from "@/lib/avatar";
 
 const preferenceEmojiMap: Record<string, { emoji: string; label: string }> = {
   smoking: { emoji: "🚬", label: "Smoker" },
@@ -91,7 +92,7 @@ const normalizeUserProfile = (user: any): UserProfile | null => {
     age: Number(user.age) || 0,
     location,
     bio: user.bio || "",
-    avatar: user.avatar || "",
+    avatar: resolveAvatar(user.avatar),
     moveInDate,
     budget,
     preferences: {

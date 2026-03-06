@@ -11,6 +11,7 @@ import {
   getCurrentUser,
   getMatchedProfiles,
 } from "@/lib/matching";
+import { resolveAvatar } from "@/lib/avatar";
 import { useAuth } from '@/lib/auth';
 import { Settings, Sparkles } from "lucide-react";
 
@@ -35,7 +36,7 @@ const Matches = () => {
       age: Number(user.age) || 0,
       location: preferences.location || user.location || "",
       bio: user.bio || "",
-      avatar: user.avatar || "",
+      avatar: resolveAvatar(user.avatar),
       moveInDate: preferences.moveInDate
         ? String(preferences.moveInDate).slice(0, 10)
         : user.moveInDate || "",

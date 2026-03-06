@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from '@/lib/auth';
 import { getCurrentUser } from "@/lib/matching";
+import { resolveAvatar } from "@/lib/avatar";
 
 const Navbar = () => {
   const location = useLocation();
@@ -37,11 +38,7 @@ const Navbar = () => {
   }, [location.pathname]);
   
   const isLoggedIn = !!currentUser;
-  const resolvedAvatar =
-    localProfile?.avatar ||
-    (currentUser?.avatar && currentUser.avatar !== "default-avatar.png"
-      ? currentUser.avatar
-      : "");
+  const resolvedAvatar = resolveAvatar(localProfile?.avatar || currentUser?.avatar);
   const resolvedName = currentUser?.name || localProfile?.name || "User";
 
   const navLinks = isLoggedIn
