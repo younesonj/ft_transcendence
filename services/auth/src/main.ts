@@ -13,12 +13,7 @@ async function bootstrap() {
     // Enable CORS - Allow NGINX origin
     app.enableCors({
         origin: [
-            'https://localhost',           // ← NGINX HTTPS
-            'https://localhost:443',       // ← NGINX HTTPS explicit
-            'http://localhost',            // ← NGINX HTTP
-            'http://localhost:3003',       // ← Direct frontend (for development)
-            'http://10.0.2.15:3003',       // ← VM IP if needed
-            process.env.FRONTEND_URL,
+            process.env.APP_URL,
         ].filter(Boolean),
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],

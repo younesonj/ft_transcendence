@@ -1,7 +1,7 @@
 all: certs up dirs
 
 dirs:
-	mkdir -p uploads/avatars uploads/listings
+	sudo mkdir -p uploads/avatars uploads/listings
 
 certs:
 	@chmod +x ./infrastructure/nginx/certs/generate_certs.sh
@@ -16,4 +16,4 @@ fclean:
 	
 	rm -f ./infrastructure/nginx/certs/*.crt ./infrastructure/nginx/certs/*.key
 
-	rm -rf uploads
+	sudo rm -rf uploads
