@@ -3,14 +3,13 @@ import { MessagesService } from './messages.service';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('api/chat/messages')
-@Controller('messages')
 @UseGuards(AuthGuard('jwt'))
 export class MessagesController {
   constructor(private messagesService: MessagesService) {}
 
   @Get(':userId')
   async getMessages(@Param('userId', ParseIntPipe) userId: number, @Request() req) {
-    const myId = req.user.id;
+    const myId = req.user.userId;
     return this.messagesService.getMessages(myId, userId);
   }
 
@@ -20,7 +19,7 @@ export class MessagesController {
     @Body('content') content: string,
     @Request() req,
   ) {
-    const myId = req.user.id;
+    const myId = req.user.userId;
     return this.messagesService.createMessage(myId, userId, content);
   }
 }

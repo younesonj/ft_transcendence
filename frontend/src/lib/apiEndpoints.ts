@@ -2,6 +2,7 @@ const API_PREFIXES = {
   auth: '/api/auth',
   users: '/api/users',
   chat: '/api/chat',
+  listings: '/api/listings',
 };
 
 export const API_ENDPOINTS = {
@@ -25,6 +26,19 @@ export const API_ENDPOINTS = {
   },
   chat: {
     root: `${API_PREFIXES.chat}/`,
+    messages: {
+      withUser: (userId: number | string) => `${API_PREFIXES.chat}/messages/${userId}`,
+    },
+    socketNamespace: "/chat",
+  },
+  listings: {
+    root: `${API_PREFIXES.listings}/`,
+    all: `${API_PREFIXES.listings}/all`,
+    myListings: `${API_PREFIXES.listings}/my-listings`,
+    byId: (id: number | string) => `${API_PREFIXES.listings}/${id}`,
+    photos: (id: number | string) => `${API_PREFIXES.listings}/${id}/photos`,
+    photoByIndex: (id: number | string, photoIndex: number) =>
+      `${API_PREFIXES.listings}/${id}/photos/${photoIndex}`,
   },
 };
 

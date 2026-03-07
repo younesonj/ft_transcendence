@@ -153,6 +153,119 @@ export async function completeUserProfile(payload: CompleteProfilePayload) {
   );
 }
 
+export interface ChatMessageDto {
+  id: number;
+  content: string;
+  senderId: number;
+  receiverId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateListingPayload {
+  title: string;
+  location: string;
+  price: number;
+  currency: string;
+  availableDate: string;
+  spotsTotal: number;
+  spotsFilled: number;
+  description: string;
+  hasWifi: boolean;
+  hasKitchen: boolean;
+  hasLaundry: boolean;
+  hasMetroNearby: boolean;
+  hasGarden: boolean;
+  hasParking: boolean;
+  petsOK: boolean;
+  hasGym: boolean;
+  hasAC: boolean;
+  isSecure: boolean;
+}
+
+export interface ListingDto {
+  id: number;
+  userId: number;
+  title: string;
+  location: string;
+  price: number;
+  currency: string;
+  availableDate: string;
+  spotsTotal: number;
+  spotsFilled: number;
+  description: string;
+  images: string[];
+  hasWifi: boolean;
+  hasKitchen: boolean;
+  hasLaundry: boolean;
+  hasMetroNearby: boolean;
+  hasGarden: boolean;
+  hasParking: boolean;
+  petsOK: boolean;
+  hasGym: boolean;
+  hasAC: boolean;
+  isSecure: boolean;
+  user?: {
+    id: number;
+    username?: string | null;
+    name?: string | null;
+    avatar?: string | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function createListing(payload: CreateListingPayload) {
+  return axiosInstance.post<{ message: string; listing: ListingDto }>(
+    API.listings.root,
+    payload
+  );
+}
+
+export async function fetchMyListings() {
+  return axiosInstance.get<ListingDto[]>(API.listings.myListings);
+}
+
+export async function fetchAllListings() {
+  return axiosInstance.get<ListingDto[]>(API.listings.all);
+}
+
+export async function updateListing(id: number, payload: Partial<CreateListingPayload>) {
+  return axiosInstance.patch<{ message: string; listing: ListingDto }>(
+    API.listings.byId(id),
+    payload
+  );
+}
+
+export async function deleteListing(id: number) {
+  return axiosInstance.delete<{ message: string }>(API.listings.byId(id));
+}
+
+export async function uploadListingPhotos(id: number, files: File[]) {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+  return axiosInstance.post<{ message: string; listing: ListingDto }>(
+    API.listings.photos(id),
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
+}
+
+export async function fetchChatMessages(withUserId: number) {
+  return axiosInstance.get<ChatMessageDto[]>(
+    API.chat.messages.withUser(withUserId)
+  );
+}
+
+export async function sendChatMessage(withUserId: number, content: string) {
+  return axiosInstance.post<ChatMessageDto>(
+    API.chat.messages.withUser(withUserId),
+    { content }
+  );
+}
+
 /* ================================
    EXPORT
 ================================ */
@@ -163,6 +276,14 @@ export default {
   logout,
   fetchCurrentUser,
   completeUserProfile,
+  createListing,
+  fetchMyListings,
+  fetchAllListings,
+  updateListing,
+  deleteListing,
+  uploadListingPhotos,
+  fetchChatMessages,
+  sendChatMessage,
 };
 
 export const api = axiosInstance;

@@ -83,13 +83,6 @@ const Hero = () => {
   const getStartedGlitch = useGlitch({
     playMode: "hover",
   });
-  const previewGlitch = useGlitch({
-    playMode: "manual",
-    timing: {
-      duration: 240,
-      iterations: 1,
-    },
-  });
 
   useEffect(() => {
     if (!api) return;
@@ -111,18 +104,6 @@ const Hero = () => {
     }
   }, [activeTab, api]);
 
-  useEffect(() => {
-    previewGlitch.startGlitch();
-    const timer = window.setTimeout(() => {
-      previewGlitch.stopGlitch();
-    }, 250);
-
-    return () => {
-      window.clearTimeout(timer);
-      previewGlitch.stopGlitch();
-    };
-  }, [activeTab, current, previewGlitch.startGlitch, previewGlitch.stopGlitch]);
-
   return (
     <section className="min-h-screen flex flex-col items-center justify-center pt-28 sm:pt-32 pb-16 sm:pb-20 relative overflow-hidden">
       
@@ -138,9 +119,13 @@ const Hero = () => {
             </div>
             
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 sm:mb-6">
-              <span className="text-foreground">Find Your Perfect</span>
+              <span className="glitch-text text-foreground" data-text="Find Your Perfect">
+                Find Your Perfect
+              </span>
               <br />
-              <span className="text-gradient">Roommates</span>
+              <span className="glitch-text text-foreground" data-text="Roommates">
+                Roommates
+              </span>
             </h1>
             
             <p className="text-base sm:text-lg text-muted-foreground max-w-md mx-auto lg:mx-0 mb-8 sm:mb-10">
@@ -172,7 +157,7 @@ const Hero = () => {
             {/* Floating glow effect */}
             <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20 rounded-3xl blur-2xl opacity-50" />
             
-            <div className="relative" ref={previewGlitch.ref}>
+            <div className="relative">
               {/* Tab Switcher */}
               <div className="flex justify-center mb-4">
                 <div className="glass rounded-full p-1 flex gap-1">
@@ -213,14 +198,18 @@ const Hero = () => {
                     ? exampleListings.map((listing, index) => (
                         <CarouselItem key={index}>
                           <div className="transform scale-95 hover:scale-100 transition-transform duration-300">
-                            <ListingCard listing={listing} />
+                            <ListingCard
+                              listing={listing}
+                              transparentBackground
+                              insetImage
+                            />
                           </div>
                         </CarouselItem>
                       ))
                     : exampleUsers.map((user, index) => (
                         <CarouselItem key={index}>
                           <div className="transform scale-95 hover:scale-100 transition-transform duration-300">
-                            <UserProfileCard user={user} />
+                            <UserProfileCard user={user} blackBackground />
                           </div>
                         </CarouselItem>
                       ))}

@@ -1,35 +1,35 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useGlitch } from "react-powerglitch";
 
 const CTA = () => {
   const navigate = useNavigate();
+  const ctaGlitch = useGlitch({
+    playMode: "hover",
+  });
 
   return (
     <section className="py-24 px-6 relative">
       <div className="container mx-auto">
-        <div className="glass rounded-3xl px-8 py-16 text-center relative overflow-hidden">
+        <div className="bg-transparent border-0 rounded-3xl px-8 py-16 text-center relative overflow-hidden">
           
           {/* Content */}
-          <div className="relative z-10">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 mb-6">
-              <Sparkles className="w-4 h-4 text-secondary" />
-              <span className="text-sm text-secondary">New Members Welcome</span>
-            </div>
-            
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
-              Ready to Find Your Perfect Match?
+          <div className="relative z-10">    
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-secondary">
+              <span className="glitch-text" data-text="Ready to Find Your">
+                Ready to Find Your
+              </span>
+              <br />
+              <span className="glitch-text" data-text="Perfect Match?">
+                Perfect Match?
+              </span>
             </h2>
-            
-            <p className="text-muted-foreground mb-8 max-w-lg mx-auto text-lg">
-              Join 1337/42 students who've already found their ideal roommates.
-            </p>
-            
             <Button 
               size="lg" 
+              ref={ctaGlitch.ref}
               onClick={() => navigate("/signup")}
-              className="group gap-2 bg-primary hover:bg-black text-black hover:text-primary font-semibold px-8 rounded-full glow-primary"
+              className="mt-6 group gap-2 bg-primary hover:bg-black text-black hover:text-primary font-semibold px-8 rounded-none glow-primary"
             >
               Connect with 42 Intra
               <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />

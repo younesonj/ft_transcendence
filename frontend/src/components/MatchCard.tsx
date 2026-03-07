@@ -4,7 +4,8 @@ import { UserProfile } from "@/lib/matching";
 
 interface MatchCardProps {
   user: UserProfile & { matchScore: number };
-  onChatClick?: (user: { name: string; avatar: string }) => void;
+  onChatClick?: (user: { id?: string | number; name: string; avatar: string }) => void;
+  blackBackground?: boolean;
 }
 
 const getMatchColor = (score: number) => {
@@ -34,7 +35,11 @@ const preferenceEmojiMap: Record<string, { emoji: string; label: string }> = {
   clean: { emoji: "🧹", label: "Clean" },
 };
 
-const MatchCard = ({ user, onChatClick }: MatchCardProps) => {
+const MatchCard = ({
+  user,
+  onChatClick,
+  blackBackground = false,
+}: MatchCardProps) => {
   // Get active preferences for display
   const activePreferences = Object.entries(user.preferences)
     .filter(([_, value]) => value)
@@ -42,7 +47,11 @@ const MatchCard = ({ user, onChatClick }: MatchCardProps) => {
     .filter(Boolean);
 
   return (
-    <div className="glass rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 relative">
+    <div
+      className={`rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 relative ${
+        blackBackground ? "bg-black" : "glass"
+      }`}
+    >
       {/* Match Score Badge */}
       <div className="absolute top-4 right-4">
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 ${getMatchColor(user.matchScore)}`}>
@@ -102,7 +111,7 @@ const MatchCard = ({ user, onChatClick }: MatchCardProps) => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onChatClick?.({ name: user.name, avatar: user.avatar })}
+          onClick={() => onChatClick?.({ id: user.id, name: user.name, avatar: user.avatar })}
           className="gap-2"
         >
           <MessageCircle className="w-4 h-4" />

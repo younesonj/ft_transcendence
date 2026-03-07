@@ -125,4 +125,57 @@
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.7; }
   }
+
+  .glitch-text {
+    position: relative;
+    display: inline-block;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    text-shadow: none;
+    animation: glitch-shift 2.8s infinite steps(2, end);
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .glitch-text::before {
+    color: inherit;
+    transform: translateX(1px);
+    clip-path: inset(0 0 58% 0);
+    opacity: 1;
+    animation: glitch-before 2s infinite steps(2, end);
+  }
+
+  .glitch-text::after {
+    color: inherit;
+    transform: translateX(-1px);
+    clip-path: inset(42% 0 0 0);
+    opacity: 1;
+    animation: glitch-after 1.7s infinite steps(2, end);
+  }
+
+  @keyframes glitch-shift {
+    0%, 92%, 100% { transform: translate(0, 0); }
+    93% { transform: translate(-1px, 1px); }
+    95% { transform: translate(1px, -1px); }
+    97% { transform: translate(-1px, 0); }
+  }
+
+  @keyframes glitch-before {
+    0%, 90%, 100% { transform: translateX(1px); }
+    92% { transform: translateX(3px); }
+    94% { transform: translateX(-2px); }
+  }
+
+  @keyframes glitch-after {
+    0%, 88%, 100% { transform: translateX(-1px); }
+    90% { transform: translateX(-3px); }
+    93% { transform: translateX(2px); }
+  }
 }

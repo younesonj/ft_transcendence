@@ -1,10 +1,13 @@
-import { MapPin, Users, Calendar, Euro } from "lucide-react";
+import { MapPin, Users, Calendar, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ListingData {
+  id?: number;
   title: string;
   location: string;
   image: string;
   price: string;
+  posterId?: number;
   postedBy: string;
   posterAvatar: string;
   roommatesWanted: number;
@@ -15,20 +18,40 @@ interface ListingData {
 
 interface ListingCardProps {
   listing: ListingData;
+  transparentBackground?: boolean;
+  insetImage?: boolean;
+  onChatClick?: (listing: ListingData) => void;
+  showChatButton?: boolean;
+  chatDisabled?: boolean;
 }
 
-const ListingCard = ({ listing }: ListingCardProps) => {
+const ListingCard = ({
+  listing,
+  transparentBackground = false,
+  insetImage = false,
+  onChatClick,
+  showChatButton = false,
+  chatDisabled = false,
+}: ListingCardProps) => {
   const spotsLeft = listing.roommatesWanted - listing.roommatesFound;
   const isFull = spotsLeft === 0;
 
   return (
-    <div className="glass rounded-2xl overflow-hidden hover:scale-[1.02] transition-all duration-300">
+    <div
+      className={`rounded-2xl overflow-hidden hover:scale-[1.02] transition-all duration-300 ${
+        transparentBackground ? "bg-black" : "glass"
+      }`}
+    >
       {/* Image */}
-      <div className="relative aspect-[16/9] overflow-hidden">
+      <div
+        className={`relative aspect-[10/5] overflow-hidden ${
+          insetImage ? "p-2 bg-black" : ""
+        }`}
+      >
         <img
           src={listing.image}
           alt={listing.title}
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${insetImage ? "rounded-xl" : ""}`}
         />
         {/* Roommate counter badge */}
         <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full flex items-center gap-2 ${
@@ -98,6 +121,19 @@ const ListingCard = ({ listing }: ListingCardProps) => {
             : `✦ ${spotsLeft} spot${spotsLeft > 1 ? 's' : ''} remaining`
           }
         </div>
+
+        {showChatButton && (
+          <Button
+            type="button"
+            onClick={() => onChatClick?.(listing)}
+            disabled={chatDisabled}
+            className="mt-3 w-full gap-2"
+            variant="outline"
+          >
+            <MessageCircle className="w-4 h-4" />
+            {chatDisabled ? "Cannot chat" : `Chat with ${listing.postedBy}`}
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ interface Preference {
 }
 
 interface UserProfile {
+  id?: string | number;
   name: string;
   age: number;
   location: string;
@@ -19,12 +20,21 @@ interface UserProfile {
 
 interface UserProfileCardProps {
   user: UserProfile;
-  onChatClick?: (user: { name: string; avatar: string }) => void;
+  onChatClick?: (user: { id?: string | number; name: string; avatar: string }) => void;
+  blackBackground?: boolean;
 }
 
-const UserProfileCard = ({ user, onChatClick }: UserProfileCardProps) => {
+const UserProfileCard = ({
+  user,
+  onChatClick,
+  blackBackground = false,
+}: UserProfileCardProps) => {
   return (
-    <div className="glass rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300">
+    <div
+      className={`rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 ${
+        blackBackground ? "bg-black" : "glass"
+      }`}
+    >
       {/* Header */}
       <div className="flex items-start gap-4 mb-4">
         <img 
@@ -42,7 +52,7 @@ const UserProfileCard = ({ user, onChatClick }: UserProfileCardProps) => {
         <Button 
           variant="outline" 
           size="icon"
-          onClick={() => onChatClick?.({ name: user.name, avatar: user.avatar })}
+          onClick={() => onChatClick?.({ id: user.id, name: user.name, avatar: user.avatar })}
           className="shrink-0"
         >
           <MessageCircle className="w-4 h-4" />

@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 
 const exampleUsers = [
   {
+    id: 2,
     name: "Alex",
     age: 24,
     location: "Paris 13e",
@@ -27,6 +28,7 @@ const exampleUsers = [
     ],
   },
   {
+    id: 3,
     name: "Sofia",
     age: 22,
     location: "Paris 14e",
@@ -43,6 +45,7 @@ const exampleUsers = [
     ],
   },
   {
+    id: 4,
     name: "Marcus",
     age: 26,
     location: "Paris 15e",
@@ -62,12 +65,12 @@ const exampleUsers = [
 
 const FindRoommates = () => {
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatUser, setChatUser] = useState<{ name: string; avatar: string } | null>(null);
+  const [chatUser, setChatUser] = useState<{ id?: string | number; name: string; avatar: string } | null>(null);
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
   const visibleUsers = isLoggedIn ? [] : exampleUsers.slice(0, 2);
 
-  const handleChatClick = (user: { name: string; avatar: string }) => {
+  const handleChatClick = (user: { id?: string | number; name: string; avatar: string }) => {
     setChatUser(user);
     setChatOpen(true);
   };
@@ -94,6 +97,7 @@ const FindRoommates = () => {
                 <UserProfileCard
                   key={index}
                   user={user}
+                  blackBackground
                   onChatClick={handleChatClick}
                 />
               ))}
@@ -107,13 +111,12 @@ const FindRoommates = () => {
           )}
 
           {!isLoggedIn && (
-            <div className="glass rounded-2xl p-6 sm:p-8 text-center mt-6">
-              <h2 className="text-xl font-bold mb-2">Log in to See More</h2>
-              <p className="text-muted-foreground mb-5">
-                Sign in to unlock the full roommate directory and start chatting.
-              </p>
-              <Button asChild>
-                <Link to="/login">Go to Login</Link>
+            <div className="text-center mt-6">
+              <Button
+                asChild
+                className="bg-primary hover:bg-black text-black hover:text-primary border-black hover:border-black font-semibold px-8 rounded-none"
+              >
+                <Link to="/login">Log in to see more</Link>
               </Button>
             </div>
           )}

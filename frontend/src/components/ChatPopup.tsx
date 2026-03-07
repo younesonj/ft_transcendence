@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/components/ui/sonner";
+import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 interface Message {
   id: string;
@@ -13,6 +15,7 @@ interface Message {
 }
 
 interface ChatUser {
+  id?: string | number;
   name: string;
   avatar: string;
 }
@@ -24,34 +27,18 @@ interface ChatPopupProps {
 }
 
 const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: "Hey! I saw your profile and think we might be a good match as roommates!",
-      sender: "me",
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-    },
-    {
-      id: "2",
-      text: "Hi there! Yeah, I noticed we have similar preferences. Are you also looking for a place near 42?",
-      sender: "them",
-      timestamp: new Date(Date.now() - 1000 * 60 * 3),
-    },
-    {
-      id: "3",
-      text: "Exactly! I'm hoping to find something within 20 mins of the campus.",
-      sender: "me",
-      timestamp: new Date(Date.now() - 1000 * 60 * 1),
-    },
-  ]);
+  const { user: authUser } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [minimized, setMinimized] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [backendEnabled, setBackendEnabled] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const openRef = useRef(open);
   const minimizedRef = useRef(minimized);
   const titleRef = useRef<string>(typeof document !== "undefined" ? document.title : "");
-  const replyTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     openRef.current = open;
@@ -92,56 +79,81 @@ const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
   }, [unreadCount]);
 
   useEffect(() => {
-    return () => {
-      if (replyTimerRef.current) {
-        window.clearTimeout(replyTimerRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const handleSend = () => {
-    if (!newMessage.trim()) return;
+  const toNumericId = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number.parseInt(value, 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  };
 
-    const message: Message = {
-      id: Date.now().toString(),
-      text: newMessage,
-      sender: "me",
-      timestamp: new Date(),
+  const chatPartnerId = toNumericId(user?.id);
+  const currentUserId = toNumericId(authUser?.id);
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!open || !chatPartnerId || !currentUserId) {
+        setBackendEnabled(false);
+        setMessages([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const rows = await api.fetchChatMessages(chatPartnerId);
+        setMessages(
+          rows.map((row) => ({
+            id: String(row.id),
+            text: row.content,
+            sender: row.senderId === currentUserId ? "me" : "them",
+            timestamp: new Date(row.createdAt),
+          }))
+        );
+        setBackendEnabled(true);
+      } catch (error: any) {
+        setBackendEnabled(false);
+        setMessages([]);
+        toast.error(error?.message || "Failed to load chat messages");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setMessages((prev) => [...prev, message]);
-    setNewMessage("");
+    void loadMessages();
+  }, [open, chatPartnerId, currentUserId]);
 
-    if (replyTimerRef.current) {
-      window.clearTimeout(replyTimerRef.current);
+  const handleSend = async () => {
+    if (!newMessage.trim()) return;
+    if (!chatPartnerId || !currentUserId) {
+      toast.error("Chat is unavailable for this user.");
+      return;
     }
 
-    replyTimerRef.current = window.setTimeout(() => {
-      const autoReply: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Nice! Let me know your timeline and budget and we can plan a visit.",
-        sender: "them",
-        timestamp: new Date(),
+    const content = newMessage.trim();
+    setNewMessage("");
+    setSending(true);
+    try {
+      const saved = await api.sendChatMessage(chatPartnerId, content);
+      const message: Message = {
+        id: String(saved.id),
+        text: saved.content,
+        sender: saved.senderId === currentUserId ? "me" : "them",
+        timestamp: new Date(saved.createdAt),
       };
-
-      setMessages((prev) => [...prev, autoReply]);
-
-      const shouldNotify =
-        !openRef.current || minimizedRef.current || document.hidden;
-
-      if (shouldNotify) {
-        setUnreadCount((prev) => prev + 1);
-        if (user?.name) {
-          toast(`${user.name} sent you a message`);
-        }
-      }
-    }, 1200);
+      setMessages((prev) => [...prev, message]);
+      setBackendEnabled(true);
+    } catch (error: any) {
+      setNewMessage(content);
+      toast.error(error?.message || "Failed to send message");
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -233,14 +245,19 @@ const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Aa"
+                placeholder={
+                  backendEnabled
+                    ? "Aa"
+                    : "Chat requires login + a valid user id"
+                }
                 className="flex-1 h-9 text-sm"
+                disabled={!backendEnabled || loading || sending}
               />
               <Button 
                 onClick={handleSend} 
                 size="icon" 
                 className="h-9 w-9"
-                disabled={!newMessage.trim()}
+                disabled={!backendEnabled || loading || sending || !newMessage.trim()}
               >
                 <Send className="w-4 h-4" />
               </Button>

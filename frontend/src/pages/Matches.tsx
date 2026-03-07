@@ -20,7 +20,7 @@ const Matches = () => {
   const [showSetup, setShowSetup] = useState(false);
   const [matches, setMatches] = useState<Array<UserProfile & { matchScore: number }>>([]);
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatUser, setChatUser] = useState<{ name: string; avatar: string } | null>(null);
+  const [chatUser, setChatUser] = useState<{ id?: string | number; name: string; avatar: string } | null>(null);
   const { user: authUser } = useAuth();
 
   const normalizeUserProfile = (user: any): UserProfile | null => {
@@ -78,7 +78,7 @@ const Matches = () => {
     setMatches(matched);
   };
 
-  const handleChatClick = (user: { name: string; avatar: string }) => {
+  const handleChatClick = (user: { id?: string | number; name: string; avatar: string }) => {
     setChatUser(user);
     setChatOpen(true);
   };
@@ -160,6 +160,7 @@ const Matches = () => {
                     <MatchCard
                       key={match.id}
                       user={match}
+                      blackBackground
                       onChatClick={handleChatClick}
                     />
                   ))

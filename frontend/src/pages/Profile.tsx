@@ -8,12 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   UserProfile,
-  UserPreferences,
   getCurrentUser,
   getMatchedProfiles,
   setCurrentUser as storeCurrentUser,
 } from "@/lib/matching";
-import api from '@/lib/api';
+import api, { type CreateListingPayload, type ListingDto } from "@/lib/api";
 import {
   MapPin,
   Calendar,
@@ -45,19 +44,6 @@ const preferenceEmojiMap: Record<string, { emoji: string; label: string }> = {
   clean: { emoji: "🧹", label: "Clean" },
 };
 
-const emptyPreferences: UserPreferences = {
-  smoking: false,
-  quietHours: false,
-  earlyBird: false,
-  nightOwl: false,
-  petsOk: false,
-  cooking: false,
-  gaming: false,
-  social: false,
-  studious: false,
-  clean: false,
-};
-
 const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: "€",
   USD: "$",
@@ -67,6 +53,139 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   CAD: "C$",
   AUD: "A$",
   MAD: "Dh",
+};
+
+const AMENITY_FIELD_MAP = {
+  WiFi: "hasWifi",
+  Kitchen: "hasKitchen",
+  Laundry: "hasLaundry",
+  "Metro nearby": "hasMetroNearby",
+  Garden: "hasGarden",
+  Parking: "hasParking",
+  "Pets OK": "petsOK",
+  Gym: "hasGym",
+  AC: "hasAC",
+  Secure: "isSecure",
+} as const;
+
+type AmenityLabel = keyof typeof AMENITY_FIELD_MAP;
+
+type ProfileListing = {
+  id: number;
+  title: string;
+  location: string;
+  price: number;
+  currency: string;
+  availableDate: string;
+  roommatesWanted: number;
+  roommatesFound: number;
+  amenities: string[];
+  images: string[];
+  description: string;
+};
+
+type ListingFormPayload = {
+  title: string;
+  location: string;
+  price: string;
+  currency: string;
+  availableDate: string;
+  roommatesWanted: number;
+  roommatesFound: number;
+  amenities: string[];
+  images: string[];
+  description: string;
+};
+
+const toDateInput = (value: string) => String(value || "").slice(0, 10);
+
+const resolveListingImage = (value: string) => {
+  if (!value) return value;
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:")) return value;
+  const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+  if (typeof window === "undefined") return normalizedPath;
+  return `${window.location.origin}${normalizedPath}`;
+};
+
+const mapListingDtoToProfileListing = (listing: ListingDto): ProfileListing => {
+  const amenities = (Object.keys(AMENITY_FIELD_MAP) as AmenityLabel[]).filter((label) =>
+    Boolean(listing[AMENITY_FIELD_MAP[label]])
+  );
+
+  return {
+    id: listing.id,
+    title: listing.title,
+    location: listing.location,
+    price: listing.price,
+    currency: listing.currency,
+    availableDate: toDateInput(listing.availableDate),
+    roommatesWanted: listing.spotsTotal,
+    roommatesFound: listing.spotsFilled,
+    amenities,
+    images: (listing.images || []).map(resolveListingImage),
+    description: listing.description || "",
+  };
+};
+
+const mapProfileListingToForm = (listing: ProfileListing): ListingFormPayload => ({
+  title: listing.title,
+  location: listing.location,
+  price: String(listing.price),
+  currency: listing.currency,
+  availableDate: listing.availableDate,
+  roommatesWanted: listing.roommatesWanted,
+  roommatesFound: listing.roommatesFound,
+  amenities: listing.amenities,
+  images: listing.images,
+  description: listing.description,
+});
+
+const mapFormToApiPayload = (listing: ListingFormPayload): CreateListingPayload => {
+  const parsedPrice = Number.parseInt(String(listing.price), 10);
+  if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+    throw new Error("Price must be a positive number.");
+  }
+
+  if (!listing.availableDate) {
+    throw new Error("Available date is required.");
+  }
+
+  if (!listing.description.trim()) {
+    throw new Error("Description is required.");
+  }
+
+  if (listing.roommatesFound > listing.roommatesWanted) {
+    throw new Error("Filled spots cannot exceed total spots.");
+  }
+
+  const payload: CreateListingPayload = {
+    title: listing.title.trim(),
+    location: listing.location.trim(),
+    price: parsedPrice,
+    currency: listing.currency,
+    availableDate: listing.availableDate,
+    spotsTotal: listing.roommatesWanted,
+    spotsFilled: listing.roommatesFound,
+    description: listing.description.trim(),
+    hasWifi: false,
+    hasKitchen: false,
+    hasLaundry: false,
+    hasMetroNearby: false,
+    hasGarden: false,
+    hasParking: false,
+    petsOK: false,
+    hasGym: false,
+    hasAC: false,
+    isSecure: false,
+  };
+
+  (Object.keys(AMENITY_FIELD_MAP) as AmenityLabel[]).forEach((label) => {
+    if (listing.amenities.includes(label)) {
+      payload[AMENITY_FIELD_MAP[label]] = true;
+    }
+  });
+
+  return payload;
 };
 
 const normalizeUserProfile = (user: any): UserProfile | null => {
@@ -130,11 +249,12 @@ const Profile = () => {
   const [matches, setMatches] = useState<Array<UserProfile & { matchScore: number }>>([]);
   const [showSetup, setShowSetup] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatUser, setChatUser] = useState<{ name: string; avatar: string } | null>(null);
+  const [chatUser, setChatUser] = useState<{ id?: string | number; name: string; avatar: string } | null>(null);
   const [showCreateListing, setShowCreateListing] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [logoutArmed, setLogoutArmed] = useState(false);
-  const [myListings, setMyListings] = useState<Array<{ title: string; location: string; price: string; currency: string; availableDate: string; roommatesWanted: number; roommatesFound: number; amenities: string[]; images: string[]; description: string }>>([]);
+  const [myListings, setMyListings] = useState<ProfileListing[]>([]);
+  const [listingsError, setListingsError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -170,6 +290,17 @@ const Profile = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const listings = await api.fetchMyListings();
+        setMyListings(listings.map(mapListingDtoToProfileListing));
+      } catch (err: any) {
+        setListingsError(err?.message || "Could not load your listings.");
+      }
+    })();
+  }, []);
+
   const handleProfileComplete = (profile: UserProfile) => {
     setCurrentUser(profile);
     updateUser({
@@ -198,9 +329,52 @@ const Profile = () => {
     navigate("/login");
   };
 
-  const handleChatClick = (user: { name: string; avatar: string }) => {
+  const handleChatClick = (user: { id?: string | number; name: string; avatar: string }) => {
     setChatUser(user);
     setChatOpen(true);
+  };
+
+  const handlePublishListing = async (listing: ListingFormPayload, imageFiles: File[] = []) => {
+    setListingsError(null);
+    const payload = mapFormToApiPayload(listing);
+
+    if (editingIndex !== null) {
+      const listingToUpdate = myListings[editingIndex];
+      if (!listingToUpdate) {
+        throw new Error("Listing to edit was not found.");
+      }
+      const res = await api.updateListing(listingToUpdate.id, payload);
+      const updatedListing = mapListingDtoToProfileListing(res.listing);
+      setMyListings((prev) =>
+        prev.map((item, idx) => (idx === editingIndex ? updatedListing : item))
+      );
+      setEditingIndex(null);
+      setShowCreateListing(false);
+      return;
+    }
+
+    const created = await api.createListing(payload);
+    let listingResult = created.listing;
+    if (imageFiles.length >= 2) {
+      const upload = await api.uploadListingPhotos(listingResult.id, imageFiles);
+      listingResult = upload.listing;
+    }
+    const createdListing = mapListingDtoToProfileListing(listingResult);
+    setMyListings((prev) => [createdListing, ...prev]);
+    setShowCreateListing(false);
+  };
+
+  const handleDeleteListing = async (id: number) => {
+    setListingsError(null);
+    try {
+      await api.deleteListing(id);
+      setMyListings((prev) => prev.filter((listing) => listing.id !== id));
+      if (editingIndex !== null) {
+        setEditingIndex(null);
+      }
+    } catch (err: any) {
+      setListingsError(err?.message || "Could not delete listing.");
+    }
   };
 
   const activePreferences = currentUser
@@ -394,24 +568,12 @@ const Profile = () => {
                 setShowCreateListing(false);
                 setEditingIndex(null);
               }}
-              onPublish={(listing) => {
-                if (editingIndex !== null) {
-                  // Update existing listing
-                  setMyListings((prev) =>
-                    prev.map((item, idx) =>
-                      idx === editingIndex ? listing : item
-                    )
-                  );
-                  setEditingIndex(null);
-                } else {
-                  // Create new listing
-                  setMyListings((prev) => [listing, ...prev]);
-                  setShowCreateListing(false);
-                }
-              }}
-              userName={currentUser.name}
-              userAvatar={currentUser.avatar}
-              existingListing={editingIndex !== null ? myListings[editingIndex] : undefined}
+              onPublish={handlePublishListing}
+              existingListing={
+                editingIndex !== null && myListings[editingIndex]
+                  ? mapProfileListingToForm(myListings[editingIndex])
+                  : undefined
+              }
             />
           ) : (
             <div className="glass rounded-2xl p-5 flex items-center justify-between">
@@ -436,11 +598,14 @@ const Profile = () => {
               <h2 className="text-lg sm:text-xl font-bold text-foreground">My Listings</h2>
               <span className="ml-auto text-xs text-muted-foreground">{myListings.length} listing{myListings.length !== 1 ? "s" : ""}</span>
             </div>
+            {listingsError && (
+              <p className="text-sm text-destructive mb-3">{listingsError}</p>
+            )}
 
             {myListings.length > 0 ? (
               <div className="space-y-3">
                 {myListings.map((listing, i) => (
-                  <div key={i} className="glass rounded-xl overflow-hidden border border-white/10 hover:border-primary/30 transition-colors">
+                  <div key={listing.id} className="glass rounded-xl overflow-hidden border border-white/10 hover:border-primary/30 transition-colors">
                     <div className="flex flex-col sm:flex-row gap-4 p-4">
                       {/* First Image Thumbnail */}
                       {listing.images.length > 0 && (
@@ -465,7 +630,7 @@ const Profile = () => {
                               {listing.location}
                             </span>
                             <span className="font-semibold text-primary">
-                              {listing.currency}{listing.price}
+                              {(CURRENCY_SYMBOLS[listing.currency] || listing.currency)}{listing.price}
                             </span>
                             <span className="inline-flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
@@ -516,7 +681,7 @@ const Profile = () => {
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => setMyListings((prev) => prev.filter((_, idx) => idx !== i))}
+                          onClick={() => handleDeleteListing(listing.id)}
                         >
                           ✕
                         </Button>
@@ -553,6 +718,7 @@ const Profile = () => {
                   <MatchCard
                     key={match.id}
                     user={match}
+                    blackBackground
                     onChatClick={handleChatClick}
                   />
                 ))

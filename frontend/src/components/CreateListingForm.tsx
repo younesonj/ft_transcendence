@@ -33,19 +33,23 @@ const AMENITY_OPTIONS = [
 
 interface CreateListingFormProps {
   onClose: () => void;
-  onPublish?: (listing: ListingFormData & { currency: string }) => void;
-  userName: string;
-  userAvatar: string;
+  onPublish?: (
+    listing: ListingFormData & { currency: string },
+    imageFiles: File[]
+  ) => Promise<void> | void;
   existingListing?: ListingFormData & { currency: string };
 }
 
-const CreateListingForm = ({ onClose, onPublish, userName, userAvatar, existingListing }: CreateListingFormProps) => {
-  const [currency, setCurrency] = useState(existingListing?.currency || "€");
+const CreateListingForm = ({ onClose, onPublish, existingListing }: CreateListingFormProps) => {
+  const [currency, setCurrency] = useState(existingListing?.currency || "EUR");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [form, setForm] = useState<ListingFormData>(
     existingListing || {
       title: "",
       location: "",
-      price: "",
+      price: "0",
       availableDate: "",
       roommatesWanted: 2,
       roommatesFound: 0,
@@ -68,9 +72,12 @@ const CreateListingForm = ({ onClose, onPublish, userName, userAvatar, existingL
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
-      if (form.images.length >= 6) return;
+    const selectedFiles = Array.from(files).slice(0, Math.max(0, 6 - form.images.length));
+    if (selectedFiles.length === 0) return;
 
+    setImageFiles((prev) => [...prev, ...selectedFiles]);
+
+    selectedFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const base64 = event.target?.result as string;
@@ -88,12 +95,21 @@ const CreateListingForm = ({ onClose, onPublish, userName, userAvatar, existingL
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }));
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onPublish?.({ ...form, currency });
-    onClose();
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      await onPublish?.({ ...form, currency }, imageFiles);
+      onClose();
+    } catch (err: any) {
+      setSubmitError(err?.message || "Could not save listing.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -136,7 +152,10 @@ const CreateListingForm = ({ onClose, onPublish, userName, userAvatar, existingL
               <div className="flex gap-2">
                 <CurrencySelect value={currency} onChange={setCurrency} />
                 <Input
-                  placeholder="e.g. 650/mo"
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder="e.g. 650"
                   value={form.price}
                   onChange={(e) => setForm({ ...form, price: e.target.value })}
                   required
@@ -150,7 +169,7 @@ const CreateListingForm = ({ onClose, onPublish, userName, userAvatar, existingL
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Available Date</label>
               <Input
-                placeholder="e.g. Feb 2026"
+                type="date"
                 value={form.availableDate}
                 onChange={(e) => setForm({ ...form, availableDate: e.target.value })}
                 required
@@ -186,6 +205,7 @@ const CreateListingForm = ({ onClose, onPublish, userName, userAvatar, existingL
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
+              required
             />
           </div>
 
@@ -256,9 +276,11 @@ const CreateListingForm = ({ onClose, onPublish, userName, userAvatar, existingL
             </div>
           </div>
 
-          <Button type="submit" className="w-full gap-2">
+          {submitError && <p className="text-sm text-destructive">{submitError}</p>}
+
+          <Button type="submit" className="w-full gap-2" disabled={submitting}>
             <Plus className="w-4 h-4" />
-            {existingListing ? "Save Changes" : "Publish Listing"}
+            {submitting ? "Saving..." : existingListing ? "Save Changes" : "Publish Listing"}
           </Button>
         </form>
       </CardContent>

@@ -43,7 +43,6 @@ const Navbar = () => {
 
   const navLinks = isLoggedIn
     ? [
-        { to: "/", label: "Home" },
         { to: "/find-roommates", label: "Roommates" },
         { to: "/listings", label: "Listings" },
         { to: "/matches", label: "Matches" },
