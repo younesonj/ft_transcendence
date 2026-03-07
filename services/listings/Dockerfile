@@ -42,4 +42,4 @@ ENV NODE_ENV=production
 EXPOSE ${LISTINGS_SERVICE_PORT}
 
 # 4. Avoid npx overhead — call binaries directly & skip unnecessary prisma generate
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && node dist/main.js"]
