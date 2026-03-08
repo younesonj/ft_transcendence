@@ -153,6 +153,22 @@ export async function completeUserProfile(payload: CompleteProfilePayload) {
   );
 }
 
+export async function uploadAvatar(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return axiosInstance.post<{ message: string; avatar: string; user: any }>(
+    API.users.avatar,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    }
+  );
+}
+
+export async function deleteAvatar() {
+  return axiosInstance.delete<{ message: string; user: any }>(API.users.avatar);
+}
+
 export interface ChatMessageDto {
   id: number;
   content: string;
@@ -276,6 +292,8 @@ export default {
   logout,
   fetchCurrentUser,
   completeUserProfile,
+  uploadAvatar,
+  deleteAvatar,
   createListing,
   fetchMyListings,
   fetchAllListings,

@@ -12,6 +12,19 @@ import { Response, Request } from 'express';  // ← Add Response
 export class AppController {
     constructor(private readonly appService: AppService) { }
 
+    private resolveFrontendUrl(req: Request): string {
+        const configured = process.env.APP_URL || process.env.FRONTEND_URL;
+        if (configured) {
+            return configured.replace(/\/+$/, '');
+        }
+
+        const forwardedProto = (req.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0]?.trim();
+        const forwardedHost = (req.headers['x-forwarded-host'] as string | undefined)?.split(',')[0]?.trim();
+        const proto = forwardedProto || req.protocol || 'http';
+        const host = forwardedHost || req.get('host');
+        return `${proto}://${host}`;
+    }
+
     @Get()
     @ApiOperation({ summary: 'Health check' })
     @ApiResponse({ status: 200, description: 'Service is running' })
@@ -165,6 +178,7 @@ export class AppController {
     async callback42(@Req() req: any, @Res() res: Response, ) {
         try {
             const result = await this.appService.oauthLogin(req.user);
+            const frontendUrl = this.resolveFrontendUrl(req);
 
             // Set cookie
             res.cookie('access_token', result.access_token, {
@@ -175,10 +189,11 @@ export class AppController {
             });
 
             // Redirect to frontend with success + token (fallback when cookies are blocked cross-origin)
-            res.redirect(`${process.env.APP_URL}/auth/callback?success=true`);
+            res.redirect(`${frontendUrl}/auth/callback?success=true`);
         } catch (error) {
             console.error('42 OAuth error:', error);
-            res.redirect(`${process.env.APP_URL}/auth/error`);
+            const frontendUrl = this.resolveFrontendUrl(req);
+            res.redirect(`${frontendUrl}/auth/error`);
         }
     }
    // ========== GOOGLE OAUTH ENDPOINTS ========== (ADD THESE)
@@ -204,6 +219,7 @@ export class AppController {
     async callbackGoogle(@Req() req: any, @Res() res: Response) {
         try {
             const result = await this.appService.oauthLogin(req.user);
+            const frontendUrl = this.resolveFrontendUrl(req);
 
             // Set cookie
             res.cookie('access_token', result.access_token, {
@@ -214,10 +230,11 @@ export class AppController {
             });
 
             // Redirect to frontend with success + token (fallback when cookies are blocked cross-origin)
-            res.redirect(`${process.env.APP_URL}/auth/callback?success=true`);
+            res.redirect(`${frontendUrl}/auth/callback?success=true`);
         } catch (error) {
             console.error('Google OAuth error:', error);
-            res.redirect(`${process.env.APP_URL}/auth/error`);
+            const frontendUrl = this.resolveFrontendUrl(req);
+            res.redirect(`${frontendUrl}/auth/error`);
         }
     }
 

@@ -69,12 +69,14 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
   const [budget, setBudget] = useState(extractBudgetValue(existingProfile?.budget));
   const [currency, setCurrency] = useState("EUR");
   const [avatarPreview, setAvatarPreview] = useState(resolveAvatar(existingProfile?.avatar));
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
@@ -150,6 +152,13 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
       const response = await api.completeUserProfile(payload);
       const backendUser = response?.user ?? {};
       const backendPrefs = backendUser.preferences ?? {};
+      let persistedAvatar = backendUser.avatar;
+
+      if (avatarFile) {
+        const avatarResponse = await api.uploadAvatar(avatarFile);
+        persistedAvatar = avatarResponse?.avatar || avatarResponse?.user?.avatar || persistedAvatar;
+      }
+
       const profile: UserProfile = {
         id: String(backendUser.id ?? existingProfile?.id ?? ""),
         username: backendUser.username || payload.username,
@@ -159,8 +168,8 @@ const ProfileSetupForm = ({ onComplete, existingProfile }: ProfileSetupFormProps
         location: backendPrefs.location || payload.location,
         bio: backendUser.bio || payload.bio,
         avatar: resolveAvatar(
-          avatarPreview ||
-          backendUser.avatar ||
+          persistedAvatar ||
+          existingProfile?.avatar ||
           `https://api.dicebear.com/7.x/avataaars/svg?seed=${payload.name}`
         ),
         moveInDate: (backendPrefs.moveInDate || payload.moveInDate).slice(0, 10),

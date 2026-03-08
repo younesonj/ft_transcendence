@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Home, Users } from "lucide-react";
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import { useState, useEffect } from "react";
-import Autoplay from "embla-carousel-autoplay";
+import { ArrowRight, Sparkles } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { useState } from "react";
 import { useGlitch } from "react-powerglitch";
+import Autoplay from "embla-carousel-autoplay";
 import ListingCard from "@/components/ListingCard";
 import UserProfileCard from "@/components/UserProfileCard";
 import { useNavigate } from "react-router-dom";
@@ -74,35 +74,20 @@ const exampleUsers = [
   },
 ];
 
+const mixedCarouselItems = [
+  { type: "listing", data: exampleListings[0] },
+  { type: "roommate", data: exampleUsers[0] },
+  { type: "listing", data: exampleListings[1] },
+  { type: "roommate", data: exampleUsers[1] },
+] as const;
+
 const Hero = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"listings" | "roommates">("listings");
-  const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
   const getStartedGlitch = useGlitch({
     playMode: "hover",
   });
-
-  useEffect(() => {
-    if (!api) return;
-
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap());
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap());
-    });
-  }, [api]);
-
-  // Reset carousel when tab changes
-  useEffect(() => {
-    if (api) {
-      api.scrollTo(0);
-      setCount(api.scrollSnapList().length);
-      setCurrent(0);
-    }
-  }, [activeTab, api]);
 
   return (
     <section className="min-h-screen flex flex-col items-center justify-center pt-28 sm:pt-32 pb-16 sm:pb-20 relative overflow-hidden">
@@ -158,61 +143,29 @@ const Hero = () => {
             <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-secondary/20 to-primary/20 rounded-3xl blur-2xl opacity-50" />
             
             <div className="relative">
-              {/* Tab Switcher */}
-              <div className="flex justify-center mb-4">
-                <div className="glass rounded-full p-1 flex gap-1">
-                  <button
-                    onClick={() => setActiveTab("listings")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      activeTab === "listings"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Home className="w-4 h-4" />
-                    Listings
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("roommates")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      activeTab === "roommates"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Users className="w-4 h-4" />
-                    Roommates
-                  </button>
-                </div>
-              </div>
-
               {/* Carousel */}
-              <Carousel 
-                className="w-full" 
-                opts={{ loop: true }} 
-                plugins={[Autoplay({ delay: 4000, stopOnInteraction: false })]}
-                setApi={setApi}
+              <Carousel
+                className="w-full"
+                opts={{ loop: true, align: "center" }}
+                plugins={[Autoplay({ delay: 3000, stopOnInteraction: false })]}
+                variant="cone-vertical"
+                activeIndex={current}
+                autoplayDelay={3000}
+                onSlideChange={setCurrent}
+                onSlideCountChange={setCount}
               >
                 <CarouselContent>
-                  {activeTab === "listings"
-                    ? exampleListings.map((listing, index) => (
-                        <CarouselItem key={index}>
-                          <div className="transform scale-95 hover:scale-100 transition-transform duration-300">
-                            <ListingCard
-                              listing={listing}
-                              transparentBackground
-                              insetImage
-                            />
-                          </div>
-                        </CarouselItem>
-                      ))
-                    : exampleUsers.map((user, index) => (
-                        <CarouselItem key={index}>
-                          <div className="transform scale-95 hover:scale-100 transition-transform duration-300">
-                            <UserProfileCard user={user} blackBackground />
-                          </div>
-                        </CarouselItem>
-                      ))}
+                  {mixedCarouselItems.map((item, index) => (
+                    <CarouselItem key={index}>
+                      <div className="transform transition-transform duration-300 hover:scale-[1.02]">
+                        {item.type === "listing" ? (
+                          <ListingCard listing={item.data} transparentBackground insetImage />
+                        ) : (
+                          <UserProfileCard user={item.data} blackBackground />
+                        )}
+                      </div>
+                    </CarouselItem>
+                  ))}
                 </CarouselContent>
               </Carousel>
 
@@ -221,7 +174,7 @@ const Hero = () => {
                 {Array.from({ length: count }).map((_, index) => (
                   <button
                     key={index}
-                    onClick={() => api?.scrollTo(index)}
+                    onClick={() => setCurrent(index)}
                     className={`transition-all duration-300 rounded-full ${
                       index === current
                         ? "w-6 h-2 bg-primary glow-primary"

@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
     completeProfile: `${API_PREFIXES.users}/complete-profile`,
     updateProfile: `${API_PREFIXES.users}/profile`,
     changePassword: `${API_PREFIXES.users}/password`,
+    avatar: `${API_PREFIXES.users}/avatar`,
   },
   chat: {
     root: `${API_PREFIXES.chat}/`,

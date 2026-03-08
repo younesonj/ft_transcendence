@@ -11,10 +11,13 @@ async function bootstrap() {
     app.use(cookieParser());
 
     // Enable CORS - Allow NGINX origin
+    const allowedOrigins = [
+        process.env.APP_URL,
+        process.env.FRONTEND_URL,
+    ].filter(Boolean);
+
     app.enableCors({
-        origin: [
-            process.env.APP_URL,
-        ].filter(Boolean),
+        origin: allowedOrigins,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
