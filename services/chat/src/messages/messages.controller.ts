@@ -7,6 +7,12 @@ import { AuthGuard } from '@nestjs/passport';
 export class MessagesController {
   constructor(private messagesService: MessagesService) {}
 
+  @Get('inbox')
+  async getInbox(@Request() req) {
+    const myId = req.user.userId;
+    return this.messagesService.getInbox(myId);
+  }
+
   @Get(':userId')
   async getMessages(@Param('userId', ParseIntPipe) userId: number, @Request() req) {
     const myId = req.user.userId;

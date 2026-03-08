@@ -28,4 +28,64 @@ export class MessagesService {
       },
     });
   }
+
+  async getInbox(userId: number) {
+    const rows = await this.prisma.message.findMany({
+      where: {
+        receiverId: userId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+      take: 200,
+    });
+
+    const bySender = new Map<
+      number,
+      {
+        senderId: number;
+        senderName: string;
+        senderAvatar: string;
+        lastMessage: string;
+        lastMessageAt: Date;
+        unreadCount: number;
+      }
+    >();
+
+    for (const message of rows) {
+      const key = message.senderId;
+      const senderName = message.sender?.name || message.sender?.username || `User ${message.senderId}`;
+      const senderAvatar = message.sender?.avatar || 'default-avatar.png';
+
+      if (!bySender.has(key)) {
+        bySender.set(key, {
+          senderId: message.senderId,
+          senderName,
+          senderAvatar,
+          lastMessage: message.content,
+          lastMessageAt: message.createdAt,
+          unreadCount: message.isRead ? 0 : 1,
+        });
+      } else {
+        const current = bySender.get(key)!;
+        if (!message.isRead) {
+          current.unreadCount += 1;
+        }
+      }
+    }
+
+    return Array.from(bySender.values()).sort(
+      (a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime(),
+    );
+  }
 }

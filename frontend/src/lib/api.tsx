@@ -178,6 +178,15 @@ export interface ChatMessageDto {
   updatedAt: string;
 }
 
+export interface ChatInboxItemDto {
+  senderId: number;
+  senderName: string;
+  senderAvatar: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
 export interface CreateListingPayload {
   title: string;
   location: string;
@@ -246,6 +255,10 @@ export async function fetchAllListings() {
   return axiosInstance.get<ListingDto[]>(API.listings.all);
 }
 
+export async function fetchAllUsers() {
+  return axiosInstance.get<any[]>(API.users.all);
+}
+
 export async function updateListing(id: number, payload: Partial<CreateListingPayload>) {
   return axiosInstance.patch<{ message: string; listing: ListingDto }>(
     API.listings.byId(id),
@@ -282,6 +295,10 @@ export async function sendChatMessage(withUserId: number, content: string) {
   );
 }
 
+export async function fetchChatInbox() {
+  return axiosInstance.get<ChatInboxItemDto[]>(API.chat.messages.inbox);
+}
+
 /* ================================
    EXPORT
 ================================ */
@@ -295,11 +312,13 @@ export default {
   uploadAvatar,
   deleteAvatar,
   createListing,
+  fetchAllUsers,
   fetchMyListings,
   fetchAllListings,
   updateListing,
   deleteListing,
   uploadListingPhotos,
+  fetchChatInbox,
   fetchChatMessages,
   sendChatMessage,
 };

@@ -66,6 +66,17 @@ export class AppController {
         return this.appService.getMe(userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Get('all')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all users except current user' })
+    @ApiResponse({ status: 200, description: 'Returns users list for roommate discovery' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    async getAllUsers(@Req() req: any) {
+        const userId = req.user.userId;
+        return this.appService.getAllUsers(userId);
+    }
+
     // ========== GET USER BY ID ==========
     // @UseGuards(JwtAuthGuard)
     @Get(':id')
