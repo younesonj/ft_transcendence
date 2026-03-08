@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from '@/lib/auth';
 import { getCurrentUser } from "@/lib/matching";
 import { resolveAvatar } from "@/lib/avatar";
+import NavbarChatInbox from "@/components/NavbarChatInbox";
 
 const Navbar = () => {
   const location = useLocation();
@@ -43,8 +44,8 @@ const Navbar = () => {
 
   const navLinks = isLoggedIn
     ? [
-        { to: "/find-roommates", label: "Roommates" },
-        { to: "/listings", label: "Listings" },
+        { to: "/loggedin-roommates", label: "Roommates" },
+        { to: "/loggedin-listings", label: "Listings" },
         { to: "/matches", label: "Matches" },
       ]
     : [
@@ -94,6 +95,7 @@ const Navbar = () => {
             {/* Desktop Right Section */}
             {isLoggedIn ? (
               <div className="hidden md:flex md:absolute md:right-0 items-center gap-2">
+                <NavbarChatInbox />
                 <Link
                   to="/profile"
                   className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/40 backdrop-blur-xl hover:bg-white/10 transition-all duration-300"
@@ -149,18 +151,23 @@ const Navbar = () => {
                 })}
                 <div className="h-px bg-white/10 my-2" />
                 {isLoggedIn ? (
-                  <Link 
-                    to="/profile" 
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all"
-                  >
-                    <Avatar className="w-7 h-7 border border-primary/30">
-                      <AvatarImage src={resolvedAvatar} alt={resolvedName} className="object-cover" />
-                      <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                        {resolvedName?.charAt(0) ?? 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-foreground">{resolvedName}</span>
-                  </Link>
+                  <>
+                    <div className="px-2 py-1">
+                      <NavbarChatInbox />
+                    </div>
+                    <Link 
+                      to="/profile" 
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all"
+                    >
+                      <Avatar className="w-7 h-7 border border-primary/30">
+                        <AvatarImage src={resolvedAvatar} alt={resolvedName} className="object-cover" />
+                        <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                          {resolvedName?.charAt(0) ?? 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-foreground">{resolvedName}</span>
+                    </Link>
+                  </>
                 ) : (
                   <Link 
                     to="/login" 

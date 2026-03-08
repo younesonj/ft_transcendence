@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   },
   users: {
     root: `${API_PREFIXES.users}/`,
+    all: `${API_PREFIXES.users}/all`,
     test: `${API_PREFIXES.users}/test`,
     me: `${API_PREFIXES.users}/me`,
     getById: (id: number | string) => `${API_PREFIXES.users}/${id}`,
@@ -28,6 +29,7 @@ export const API_ENDPOINTS = {
   chat: {
     root: `${API_PREFIXES.chat}/`,
     messages: {
+      inbox: `${API_PREFIXES.chat}/messages/inbox`,
       withUser: (userId: number | string) => `${API_PREFIXES.chat}/messages/${userId}`,
     },
     socketNamespace: "/chat",

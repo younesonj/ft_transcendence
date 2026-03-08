@@ -49,6 +49,24 @@ export class AppService {
     }
 
     // ========== GET USER BY ID ==========
+    async getAllUsers(currentUserId: number) {
+        const users = await this.prisma.user.findMany({
+            where: {
+                id: { not: currentUserId },
+                isActive: true,
+            },
+            include: {
+                preferences: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+        return users.map(({ password, ...userWithoutPassword }) => userWithoutPassword);
+    }
+
+    // ========== GET USER BY ID ==========
     async getUserById(userId: number) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
