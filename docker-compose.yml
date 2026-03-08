@@ -230,8 +230,8 @@ services:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: ai
     restart: unless-stopped
-    # ports:
-    #   - "${AI_SERVICE_PORT}:${AI_SERVICE_PORT}"
+    ports:
+      - "${AI_SERVICE_PORT}:${AI_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", http://ai:3006/api/ai/model/status ]
       interval: 10s
