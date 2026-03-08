@@ -1,107 +1,72 @@
-import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ListingCard from "@/components/ListingCard";
-import ChatPopup from "@/components/ChatPopup";
 import PageLayout from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
-import api, { type ListingDto } from "@/lib/api";
-import { resolveAvatar } from "@/lib/avatar";
-import { toast } from "@/components/ui/sonner";
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: "€",
-  USD: "$",
-  GBP: "£",
-  CHF: "CHF",
-  JPY: "¥",
-  CAD: "C$",
-  AUD: "A$",
-  MAD: "Dh",
-};
-
-const AMENITIES = [
-  { key: "hasWifi", emoji: "📶", label: "WiFi" },
-  { key: "hasKitchen", emoji: "🍳", label: "Kitchen" },
-  { key: "hasLaundry", emoji: "🧺", label: "Laundry" },
-  { key: "hasMetroNearby", emoji: "🚇", label: "Metro nearby" },
-  { key: "hasGarden", emoji: "🌳", label: "Garden" },
-  { key: "hasParking", emoji: "🅿️", label: "Parking" },
-  { key: "petsOK", emoji: "🐕", label: "Pets OK" },
-  { key: "hasGym", emoji: "🏋️", label: "Gym" },
-  { key: "hasAC", emoji: "❄️", label: "AC" },
-  { key: "isSecure", emoji: "🔒", label: "Secure" },
-] as const;
-
-const toImageSrc = (value: string) => {
-  if (!value) return "/placeholder.svg";
-  if (/^https?:\/\//i.test(value) || value.startsWith("data:")) return value;
-  const normalized = value.startsWith("/") ? value : `/${value}`;
-  return `${window.location.origin}${normalized}`;
-};
-
-const toCardListing = (listing: ListingDto) => ({
-  id: listing.id,
-  title: listing.title,
-  location: listing.location,
-  image: toImageSrc(listing.images?.[0] || ""),
-  price: `${CURRENCY_SYMBOLS[listing.currency] || listing.currency}${listing.price}/mo`,
-  posterId: listing.user?.id,
-  postedBy: listing.user?.name || listing.user?.username || "Unknown",
-  posterAvatar: resolveAvatar(listing.user?.avatar),
-  roommatesWanted: listing.spotsTotal,
-  roommatesFound: listing.spotsFilled,
-  availableDate: String(listing.availableDate || "").slice(0, 10),
-  amenities: AMENITIES.filter((item) => Boolean(listing[item.key])).map(({ emoji, label }) => ({
-    emoji,
-    label,
-  })),
-});
+const exampleListings = [
+  {
+    id: 1,
+    title: "Cozy Apartment near Campus",
+    location: "Paris 13e, 5 min from 42",
+    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop",
+    price: "€650/mo",
+    posterId: 101,
+    postedBy: "Marie",
+    posterAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop",
+    roommatesWanted: 3,
+    roommatesFound: 2,
+    availableDate: "Feb 2026",
+    amenities: [
+      { emoji: "📶", label: "WiFi" },
+      { emoji: "🍳", label: "Kitchen" },
+      { emoji: "🧺", label: "Laundry" },
+    ],
+  },
+  {
+    id: 2,
+    title: "Spacious Shared House",
+    location: "Paris 14e, Alésia",
+    image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop",
+    price: "€580/mo",
+    posterId: 102,
+    postedBy: "Lucas",
+    posterAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop",
+    roommatesWanted: 5,
+    roommatesFound: 4,
+    availableDate: "Mar 2026",
+    amenities: [
+      { emoji: "🌳", label: "Garden" },
+      { emoji: "📶", label: "WiFi" },
+      { emoji: "🅿️", label: "Parking" },
+    ],
+  },
+  {
+    id: 3,
+    title: "Modern Studio with Rooftop",
+    location: "Paris 12e, Nation",
+    image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&auto=format&fit=crop",
+    price: "€720/mo",
+    posterId: 103,
+    postedBy: "Nora",
+    posterAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop",
+    roommatesWanted: 2,
+    roommatesFound: 1,
+    availableDate: "Apr 2026",
+    amenities: [
+      { emoji: "🚇", label: "Metro nearby" },
+      { emoji: "🐕", label: "Pets OK" },
+      { emoji: "🔒", label: "Secure" },
+    ],
+  },
+];
 
 const Listings = () => {
   const { user } = useAuth();
   const isLoggedIn = Boolean(user);
-  const [listings, setListings] = useState<ReturnType<typeof toCardListing>[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatUser, setChatUser] = useState<{ id?: string | number; name: string; avatar: string } | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await api.fetchAllListings();
-        setListings(data.map(toCardListing));
-      } catch (err: any) {
-        setError(err?.message || "Could not load listings.");
-      }
-    })();
-  }, []);
-
-  const handleChatFromListing = (listing: ReturnType<typeof toCardListing>) => {
-    if (!isLoggedIn) {
-      toast.error("Please log in to start chatting.");
-      return;
-    }
-
-    if (!listing.posterId) {
-      toast.error("This listing owner cannot be contacted right now.");
-      return;
-    }
-
-    if (Number(user?.id) === listing.posterId) {
-      toast.error("You cannot chat with your own listing.");
-      return;
-    }
-
-    setChatUser({
-      id: listing.posterId,
-      name: listing.postedBy,
-      avatar: listing.posterAvatar,
-    });
-    setChatOpen(true);
-  };
+  const listings = exampleListings;
 
   return (
     <PageLayout>
@@ -128,15 +93,14 @@ const Listings = () => {
                   transparentBackground
                   insetImage
                   showChatButton
-                  chatDisabled={!isLoggedIn || !listing.posterId || Number(user?.id) === listing.posterId}
-                  onChatClick={handleChatFromListing}
+                  chatDisabled
                 />
               ))}
             </div>
           ) : (
             <div className="glass rounded-2xl p-8 text-center">
               <p className="text-muted-foreground">
-                {error || "No listings available right now."}
+                No listings available right now.
               </p>
             </div>
           )}
@@ -154,12 +118,6 @@ const Listings = () => {
         </div>
       </main>
       <Footer />
-
-      <ChatPopup
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        user={chatUser}
-      />
     </PageLayout>
   );
 };
