@@ -326,6 +326,12 @@ services:
       - ./infrastructure/logging/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "filebeat test config --strict.perms=false 2>/dev/null || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - elk
     depends_on:
@@ -343,6 +349,12 @@ services:
       - ES_PASS=${ELASTIC_PASSWORD}
     volumes:
       - ./infrastructure/logging/elasticsearch/setup-ilm.sh:/scripts/setup-ilm.sh:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "test -f /tmp/ilm-setup-done || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
     networks:
       - elk
     depends_on:
@@ -359,6 +371,12 @@ services:
     volumes:
       - ./infrastructure/logging/kibana/import-dashboard.sh:/scripts/import-dashboard.sh:ro
       - ./infrastructure/logging/kibana/platform-logs-dashboard.ndjson:/usr/share/kibana/dashboards/platform-logs-dashboard.ndjson:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "test -f /tmp/dashboard-imported || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
     networks:
       - elk
     depends_on:
@@ -408,6 +426,10 @@ services:
     image: prom/node-exporter:latest
     container_name: node-exporter
     restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100/metrics" ]
       interval: 10s
@@ -480,6 +502,12 @@ services:
       - ./infrastructure/postgres/backup.sh:/scripts/backup.sh:ro
       - ./infrastructure/postgres/restore.sh:/scripts/restore.sh:ro
       - db_backups:/backups
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -h postgres_db -U ${DB_USER} || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - microservices_network
     depends_on:

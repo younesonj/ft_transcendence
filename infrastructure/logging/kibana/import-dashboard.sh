@@ -76,3 +76,10 @@ else
     echo "⚠️  Import response: ${response}"
     exit 1
 fi
+
+# Signal healthcheck that import is complete
+touch /tmp/dashboard-imported
+
+# Keep container alive so healthcheck can report healthy
+echo "✅ Dashboard import complete — container staying alive for healthcheck"
+tail -f /dev/null

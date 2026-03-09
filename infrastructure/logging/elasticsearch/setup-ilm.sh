@@ -105,3 +105,10 @@ echo "    Hot phase:    0-1 day  (rollover at 1GB or 1d)"
 echo "    Warm phase:   7 days   (shrink + force-merge)"
 echo "    Delete phase: 30 days  (auto-delete old logs)"
 echo "══════════════════════════════════════════════"
+
+# Signal healthcheck that setup is complete
+touch /tmp/ilm-setup-done
+
+# Keep container alive so healthcheck can report healthy
+echo "✅ ILM setup complete — container staying alive for healthcheck"
+tail -f /dev/null
