@@ -799,6 +799,7 @@
         "options": { "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"] }, "tooltip": { "mode": "multi" } }
       }
     ],
+    "editable": false,
     "schemaVersion": 39,
     "version": 2
   },

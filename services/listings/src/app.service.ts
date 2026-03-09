@@ -4,7 +4,6 @@ import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import * as fs from 'fs';      // ← ADD
 import * as path from 'path';  // ← ADD
-import axios from 'axios';
 
 @Injectable()
 export class AppService {
@@ -55,9 +54,6 @@ export class AppService {
             isSecure,
         } = createListingDto;
 
-        // Note: Photos will be uploaded separately via uploadListingPhotos endpoint
-        // Frontend enforces 2-6 photos requirement before allowing listing creation
-
         const listing = await this.prisma.listing.create({
             data: {
                 userId,
@@ -87,7 +83,6 @@ export class AppService {
                         username: true,
                         name: true,
                         avatar: true,
-                        bio: true,
                     },
                 },
             },
@@ -110,7 +105,6 @@ export class AppService {
                         username: true,
                         name: true,
                         avatar: true,
-                        bio: true,
                     },
                 },
             },
@@ -131,7 +125,7 @@ export class AppService {
                         username: true,
                         name: true,
                         avatar: true,
-                        bio: true,
+                        email: true,
                     },
                 },
             },
@@ -148,17 +142,6 @@ export class AppService {
     async getMyListings(userId: number) {
         const listings = await this.prisma.listing.findMany({
             where: { userId },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        avatar: true,
-                        bio: true,
-                    },
-                },
-            },
             orderBy: { createdAt: 'desc' },
         });
 
@@ -196,7 +179,6 @@ export class AppService {
                         username: true,
                         name: true,
                         avatar: true,
-                        bio: true,
                     },
                 },
             },
@@ -234,9 +216,9 @@ export class AppService {
 
     // ========== UPLOAD LISTING PHOTOS ==========
     async uploadListingPhotos(listingId: number, userId: number, files: Express.Multer.File[]) {
-        // Validate basic file count
-        if (!files || files.length < 1) {
-            throw new BadRequestException('No photos provided');
+        // Validate file count
+        if (!files || files.length < 2) {
+            throw new BadRequestException('Minimum 2 photos required');
         }
 
         if (files.length > 6) {
@@ -256,12 +238,6 @@ export class AppService {
             // Delete uploaded files if not authorized
             files.forEach(file => fs.unlinkSync(file.path));
             throw new ForbiddenException('You can only upload photos to your own listings');
-        }
-
-        // For listings with no photos yet, require at least 2 on first upload
-        if (listing.images.length === 0 && files.length < 2) {
-            files.forEach(file => fs.unlinkSync(file.path));
-            throw new BadRequestException('Minimum 2 photos required for the first upload');
         }
 
         // Check if listing already has photos (max 6 total)
@@ -294,7 +270,6 @@ export class AppService {
                         username: true,
                         name: true,
                         avatar: true,
-                        bio: true,
                     },
                 },
             },
@@ -355,7 +330,6 @@ export class AppService {
                         username: true,
                         name: true,
                         avatar: true,
-                        bio: true,
                     },
                 },
             },
@@ -366,195 +340,5 @@ export class AppService {
             totalPhotos: updatedImages.length,
             listing: updatedListing,
         };
-    }
-
-    // ========== AI RECOMMENDATIONS ==========
-    async getAIRecommendations(userId: number) {
-        try {
-            // 1. Get current user's data (for AI processing only)
-            const currentUser = await this.prisma.user.findUnique({
-                where: { id: userId },
-                include: { preferences: true }
-            });
-
-            if (!currentUser || !currentUser.preferences) {
-                throw new NotFoundException('User preferences not found. Please complete your profile first.');
-            }
-
-            // 2. Get all listings with their owners' data (internal use only)
-            const listingsInternal = await this.prisma.listing.findMany({
-                where: {
-                    isActive: true,
-                    userId: { not: userId }  // Exclude user's own listings
-                },
-                include: {
-                    user: {
-                        include: { preferences: true }
-                    }
-                }
-            });
-
-            // 3. Get safe listings for response (without sensitive data)
-            const listingsSafe = await this.prisma.listing.findMany({
-                where: {
-                    isActive: true,
-                    userId: { not: userId }
-                },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            name: true,
-                            avatar: true,
-                            bio: true,
-                        }
-                    }
-                }
-            });
-
-            if (listingsInternal.length === 0) {
-                return {
-                    recommendations: [],
-                    message: 'No listings available yet'
-                };
-            }
-
-            // 4. Format data for AI service (using internal data)
-            const targetUser = this.formatUserForAI(currentUser);
-            const candidates = listingsInternal
-                .filter(l => l.user.preferences)  // Only include users with preferences
-                .map(listing => this.formatUserForAI(listing.user));
-
-            if (candidates.length === 0) {
-                return {
-                    recommendations: listingsSafe.slice(0, 5),  // Return first 5 as fallback (safe data)
-                    message: 'AI recommendations not available, showing recent listings',
-                    aiScore: null
-                };
-            }
-
-            // 5. Call AI service
-            const aiResponse = await axios.post(
-                'http://ai:3006/api/ai/match',
-                {
-                    target_user: targetUser,
-                    candidates: candidates
-                },
-                {
-                    headers: { 'Content-Type': 'application/json' },
-                    timeout: 5000  // 5 second timeout
-                }
-            );
-
-            // 6. Find the recommended listing (use safe data for response)
-            const bestMatchId = aiResponse.data.best_match_id;
-            const recommendedListing = listingsSafe.find(l => l.userId === bestMatchId);
-
-            if (!recommendedListing) {
-                throw new NotFoundException('Recommended listing not found');
-            }
-
-            return {
-                recommendation: recommendedListing,
-                aiScore: aiResponse.data.confidence_score,
-                algorithm: aiResponse.data.algorithm_used,
-                exploration: aiResponse.data.exploration,
-                allListings: listingsSafe  // ✅ Return SAFE data (no email/password)
-            };
-
-        } catch (error) {
-            console.error('AI recommendation error:', error);
-            
-            // Fallback: return simple recommendations if AI fails (with safe user data)
-            const fallbackListings = await this.prisma.listing.findMany({
-                where: {
-                    isActive: true,
-                    userId: { not: userId }
-                },
-                include: { 
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            name: true,
-                            avatar: true,
-                            bio: true,
-                        }
-                    }
-                },
-                take: 5,
-                orderBy: { createdAt: 'desc' }
-            });
-
-            return {
-                recommendations: fallbackListings,
-                message: 'AI service unavailable, showing recent listings',
-                aiScore: null
-            };
-        }
-    }
-
-    // Helper: Format user data for AI service
-    private formatUserForAI(user: any) {
-        const prefs = user.preferences;
-        
-        return {
-            user_id: user.id,
-            budget_max: prefs?.budget || 1000,
-            cleanliness: this.mapCleanToScale(prefs?.clean),
-            sleep_schedule: prefs?.nightOwl ? 'night_owl' : 'early_bird',
-            smoker: prefs?.smoker || false,
-            has_pets: prefs?.petFriendly || false
-        };
-    }
-
-    // Helper: Map boolean clean to 1-5 scale
-    private mapCleanToScale(clean?: boolean): number {
-        return clean ? 5 : 2;  // Clean people = 5, not clean = 2
-    }
-
-    // ========== RECORD USER FEEDBACK FOR ML ==========
-    async recordListingInteraction(
-        userId: number,
-        listingId: number,
-        action: 'view' | 'like' | 'contact' | 'reject'
-    ) {
-        try {
-            // Get user and listing owner data (internal use only for AI)
-            const user = await this.prisma.user.findUnique({
-                where: { id: userId },
-                include: { preferences: true }
-            });
-
-            const listing = await this.prisma.listing.findUnique({
-                where: { id: listingId },
-                include: {
-                    user: { include: { preferences: true } }
-                }
-            });
-
-            if (!user || !listing) return;
-
-            // Send feedback to AI service (internal data, not exposed to client)
-            await axios.post(
-                'http://ai:3006/api/ai/feedback',
-                {
-                    target_user: this.formatUserForAI(user),
-                    candidate_user: this.formatUserForAI(listing.user),
-                    action: action
-                },
-                {
-                    headers: { 'Content-Type': 'application/json' },
-                    timeout: 3000
-                }
-            );
-
-            console.log(`✅ Recorded ${action} interaction for user ${userId} on listing ${listingId}`);
-
-        } catch (error) {
-            console.error('Failed to record AI feedback:', error.message);
-            // Don't fail the main operation if AI feedback fails
-        }
     }
 }

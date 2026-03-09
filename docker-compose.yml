@@ -66,9 +66,6 @@ services:
       dockerfile: services/auth/Dockerfile
     restart: unless-stopped
     image: auth
-    ports:
-      - "${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}"
-      - "5555:5555" # Prisma Studio port
     volumes:
       - ./prisma:/app/prisma
     healthcheck:
@@ -100,8 +97,6 @@ services:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: chat
     restart: unless-stopped
-    ports:
-      - "${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://chat:3001/api/chat" ]
       interval: 10s
@@ -133,8 +128,6 @@ services:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: user
     restart: unless-stopped
-    ports:
-      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://user:3002/api/users" ]
       interval: 10s
@@ -167,8 +160,6 @@ services:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: listings
     restart: unless-stopped
-    ports:
-      - "${LISTINGS_SERVICE_PORT}:${LISTINGS_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://listings:3005/api/listings" ]
       interval: 10s
@@ -199,8 +190,6 @@ services:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     container_name: postgres_db
     restart: unless-stopped
-    ports:
-      - "${POSTGRES_PORT}:5432"
     volumes:
       - ./infrastructure/postgres/init/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
       - postgres_data:/var/lib/postgresql/data
@@ -230,8 +219,6 @@ services:
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     image: ai
     restart: unless-stopped
-    ports:
-      - "${AI_SERVICE_PORT}:${AI_SERVICE_PORT}"
     healthcheck:
       test: [ "CMD", "curl", "-f", http://ai:3006/api/ai/model/status ]
       interval: 10s
@@ -258,142 +245,247 @@ services:
 
 
   
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
-  #   container_name: elasticsearch
-  #   environment:
-  #     - node.name=elasticsearch
-  #     - discovery.type=single-node
-  #     - xpack.security.enabled=false
-  #     - bootstrap.memory_lock=true
-  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-  #   ulimits:
-  #     memlock:
-  #       soft: -1
-  #       hard: -1
-  #   volumes:
-  #     - ./infrastructure/logging/elasticsearch:/usr/share/elasticsearch/data/
-  #   ports:
-  #     - 9200:9200
-  #     - 9300:9300
-  #   networks:
-  #     - elk
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf -u elastic:${ELASTIC_PASSWORD} http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - elk
 
-  # logstash:
-  #   image: logstash:${ELASTIC_VERSION}
-  #   container_name: logstash
-  #   ports:
-  #     - "5044:5044"
-  #     - "9600:9600"
-  #   volumes:
-  #     - ./infrastructure/logging/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-  #     - ./infrastructure/logging/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
-  #     - ./infrastructure/logging/logstash:/usr/share/logstash/data
-  #   networks:
-  #     - elk
-  #   depends_on:
-  #     - elasticsearch
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
+    container_name: logstash
+    group_add:
+      - "982"
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    volumes:
+      - ./infrastructure/logging/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./infrastructure/logging/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:9600/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - elk
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
-  # kibana:
-  #   image: kibana:${ELASTIC_VERSION}
-  #   container_name: kibana
-  #   ports:
-  #     - "5601:5601"
-  #   volumes:
-  #     - ./infrastructure/logging/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
-  #     - ./infrastructure/logging/kibana:/usr/share/kibana/data
-  #   networks:
-  #     - elk
-  #   depends_on:
-  #     - elasticsearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    volumes:
+      - ./infrastructure/logging/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - kibana_data:/usr/share/kibana/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf -u elastic:${ELASTIC_PASSWORD} http://localhost:5601/api/status || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 45s
+    networks:
+      - elk
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
-  # filebeat:
-  #   image: elastic/filebeat:${ELASTIC_VERSION}
-  #   container_name: filebeat
-  #   user: root
-  #   command: [ "filebeat", "-e", "--strict.perms=false" ]
-  #   volumes:
-  #     - ./infrastructure/logging/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #   networks:
-  #     - elk
-  #   depends_on:
-  #     - elasticsearch
-  #     - kibana
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:${ELASTIC_VERSION}
+    container_name: filebeat
+    user: root
+    command: [ "filebeat", "-e", "--strict.perms=false" ]
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    volumes:
+      - ./infrastructure/logging/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - elk
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_healthy
 
-  # prometheus:
-  #   image: prom/prometheus:latest
-  #   container_name: prometheus
-  #   # ports:
-  #   #   - "9090:9090"
-  #   volumes:
-  #     - ./infrastructure/logging/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  #     - ./infrastructure/logging/prometheus:/etc/prometheus
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 15s
-  #   networks:
-  #     - microservices_network
-  #   depends_on:
-  #     node-exporter:
-  #       condition: service_healthy
+  es-ilm-setup:
+    image: alpine:3.19
+    container_name: es-ilm-setup
+    entrypoint: [ "sh", "-c", "apk add --no-cache curl && sh /scripts/setup-ilm.sh" ]
+    environment:
+      - ES_USER=elastic
+      - ES_PASS=${ELASTIC_PASSWORD}
+    volumes:
+      - ./infrastructure/logging/elasticsearch/setup-ilm.sh:/scripts/setup-ilm.sh:ro
+    networks:
+      - elk
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
 
-  # node-exporter:
-  #   image: prom/node-exporter:latest
-  #   container_name: node-exporter
-  #   # ports:
-  #   #   - "9100:9100"
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100/metrics" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 10s
-  #   networks:
-  #     - microservices_network
+  kibana-dashboards:
+    image: alpine:3.19
+    container_name: kibana-dashboards
+    entrypoint: [ "sh", "-c", "apk add --no-cache curl && sh /scripts/import-dashboard.sh" ]
+    environment:
+      - ES_USER=elastic
+      - ES_PASS=${ELASTIC_PASSWORD}
+    volumes:
+      - ./infrastructure/logging/kibana/import-dashboard.sh:/scripts/import-dashboard.sh:ro
+      - ./infrastructure/logging/kibana/platform-logs-dashboard.ndjson:/usr/share/kibana/dashboards/platform-logs-dashboard.ndjson:ro
+    networks:
+      - elk
+    depends_on:
+      kibana:
+        condition: service_healthy
 
-  # blackbox-exporter:
-  #   image: prom/blackbox-exporter:latest
-  #   container_name: blackbox-exporter
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./infrastructure/monitoring/blackbox/blackbox.yml:/config/blackbox.yml
-  #   command:
-  #     - '--config.file=/config/blackbox.yml'
-  #   healthcheck:
-  #     test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9115/health" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 10s
-  #   networks:
-  #     - microservices_network
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./infrastructure/logging/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/logging/prometheus:/etc/prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - microservices_network
+    depends_on:
+      node-exporter:
+        condition: service_healthy
 
-  # grafana:
-  #   image: grafana/grafana-oss:latest
-  #   container_name: grafana
-  #   ports:
-  #     - "3000:3000"
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 3
-  #     start_period: 15s
-  #   networks:
-  #     - microservices_network
-  #   volumes:
-  #     - ./infrastructure/grafana:/var/lib/grafana
-  #   depends_on:
-  #     prometheus:
-  #       condition: service_healthy
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./infrastructure/monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - microservices_network
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100/metrics" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - microservices_network
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/monitoring/blackbox/blackbox.yml:/config/blackbox.yml
+    command:
+      - '--config.file=/config/blackbox.yml'
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9115/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - microservices_network
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      # ── Level 3: RBAC — lock down who can do what ──────────────
+      GF_USERS_DEFAULT_THEME: dark
+      GF_AUTH_ANONYMOUS_ENABLED: "false"          # require login
+      GF_USERS_ALLOW_SIGN_UP: "false"            # disable self-registration
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Viewer      # new users default to Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"         # keep login for the admin
+      GF_SECURITY_ADMIN_USER: admin              # single admin account
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-admin}  # from .env
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - microservices_network
+    volumes:
+      - ./infrastructure/grafana:/var/lib/grafana
+      # ── Level 1: Provisioning — dashboards loaded as-code ──────
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+      - ./microservices-dashboard.json:/var/lib/grafana/dashboards/microservices-dashboard.json
+    depends_on:
+      prometheus:
+        condition: service_healthy
+
+  #------------------------------------backups & DR------------------------------------#
+  db-backup:
+    image: postgres:16
+    container_name: db-backup
+    entrypoint: [ "sh", "-c", "while true; do sh /scripts/backup.sh; sleep 86400; done" ]
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_HOST: postgres_db
+      PGPASSWORD: ${DB_PASS}
+    volumes:
+      - ./infrastructure/postgres/backup.sh:/scripts/backup.sh:ro
+      - ./infrastructure/postgres/restore.sh:/scripts/restore.sh:ro
+      - db_backups:/backups
+    networks:
+      - microservices_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 networks:
   elk:
@@ -404,4 +496,10 @@ networks:
     driver: bridge
 volumes:
   postgres_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  kibana_data:
+    driver: local
+  db_backups:
     driver: local
