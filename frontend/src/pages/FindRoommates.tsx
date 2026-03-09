@@ -99,6 +99,7 @@ const FindRoommates = () => {
                   user={user}
                   blackBackground
                   onChatClick={handleChatClick}
+                  chatDisabled
                 />
               ))}
             </div>

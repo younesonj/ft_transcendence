@@ -6,6 +6,7 @@ import MatchCard from "@/components/MatchCard";
 import ChatPopup from "@/components/ChatPopup";
 import PageLayout from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import {
   UserProfile,
   getCurrentUser,
@@ -13,15 +14,24 @@ import {
 } from "@/lib/matching";
 import { resolveAvatar } from "@/lib/avatar";
 import { useAuth } from '@/lib/auth';
-import { Settings, Sparkles } from "lucide-react";
+import { Settings, Sparkles, Zap } from "lucide-react";
 
 const Matches = () => {
+  const DEFAULT_MATCH_THRESHOLD = 66;
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [showSetup, setShowSetup] = useState(false);
   const [matches, setMatches] = useState<Array<UserProfile & { matchScore: number }>>([]);
+  const [matchThreshold, setMatchThreshold] = useState(DEFAULT_MATCH_THRESHOLD);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUser, setChatUser] = useState<{ id?: string | number; name: string; avatar: string } | null>(null);
   const { user: authUser } = useAuth();
+
+  const filteredMatches = matches.filter((match) => match.matchScore > matchThreshold);
+
+  const updateThreshold = (value: number) => {
+    if (Number.isNaN(value)) return;
+    setMatchThreshold(Math.max(0, Math.min(100, value)));
+  };
 
   const normalizeUserProfile = (user: any): UserProfile | null => {
     if (!user) return null;
@@ -140,23 +150,62 @@ const Matches = () => {
           {/* User has profile - show matches */}
           {currentUser && !showSetup && (
             <>
-              {/* Edit Profile Button */}
-              <div className="flex justify-end mb-6">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowSetup(true)}
-                  className="gap-2"
-                >
-                  <Settings className="w-4 h-4" />
-                  Edit Profile
-                </Button>
-              </div>
+              {/* Filter Controls */}
+              {(() => {
+                const glowColor =
+                  matchThreshold >= 70
+                    ? "shadow-[0_0_20px_hsl(var(--primary)/0.35)] border-primary/30"
+                    : matchThreshold >= 40
+                    ? "shadow-[0_0_20px_hsl(var(--secondary)/0.35)] border-secondary/30"
+                    : "shadow-[0_0_20px_hsl(var(--destructive)/0.35)] border-destructive/30";
+
+                const accentText =
+                  matchThreshold >= 70
+                    ? "text-primary"
+                    : matchThreshold >= 40
+                    ? "text-secondary"
+                    : "text-destructive";
+
+                return (
+                  <div className={`relative mb-8 rounded-lg transition-all duration-500 ${glowColor}`}>
+                    <div className="relative flex items-center gap-3 rounded-lg border border-inherit bg-card/30 backdrop-blur-sm px-4 py-3">
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Zap className={`w-3 h-3 ${accentText} animate-pulse transition-colors duration-500`} />
+                        <span className={`font-mono text-xs tracking-widest transition-colors duration-500 ${accentText}`}>
+                          {matchThreshold}
+                        </span>
+                      </div>
+
+                      <div className="w-px h-4 bg-white/10" />
+
+                      <Slider
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={[matchThreshold]}
+                        onValueChange={([v]) => updateThreshold(v)}
+                        className="flex-1"
+                      />
+
+                      <div className="w-px h-4 bg-white/10" />
+
+                      <button
+                        onClick={() => setShowSetup(true)}
+                        className="shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-300"
+                        aria-label="Edit profile"
+                        type="button"
+                      >
+                        <Settings className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Match Cards */}
               <div className="space-y-4">
-                {matches.length > 0 ? (
-                  matches.map((match) => (
+                {filteredMatches.length > 0 ? (
+                  filteredMatches.map((match) => (
                     <MatchCard
                       key={match.id}
                       user={match}
@@ -167,7 +216,7 @@ const Matches = () => {
                 ) : (
                   <div className="glass rounded-2xl p-8 text-center">
                     <p className="text-muted-foreground">
-                      No matches found yet. Check back later!
+                      No matches above {matchThreshold}% found yet. Check back later!
                     </p>
                   </div>
                 )}

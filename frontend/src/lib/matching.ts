@@ -71,6 +71,15 @@ const normalizeProfile = (profile: any): UserProfile | null => {
   };
 };
 
+const isRenderableProfile = (profile: UserProfile): boolean => {
+  if (!profile.id || profile.id.startsWith(DEMO_PROFILE_ID_PREFIX)) return false;
+  if (!profile.name?.trim()) return false;
+  if (!profile.location?.trim()) return false;
+  if (!profile.bio?.trim()) return false;
+  if (!Number.isFinite(profile.age) || profile.age < 18 || profile.age > 100) return false;
+  return true;
+};
+
 const STORAGE_KEY = "42roommates_profiles";
 const CURRENT_USER_KEY = "42roommates_current_user";
 const DEMO_PROFILE_ID_PREFIX = "sample";
@@ -88,8 +97,7 @@ export const getProfiles = (): UserProfile[] => {
       .filter(
         (profile): profile is UserProfile =>
           profile !== null &&
-          Boolean(profile.id) &&
-          !profile.id.startsWith(DEMO_PROFILE_ID_PREFIX)
+          isRenderableProfile(profile)
       );
   } catch {
     return [];

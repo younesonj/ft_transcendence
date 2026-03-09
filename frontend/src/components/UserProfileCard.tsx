@@ -22,12 +22,14 @@ interface UserProfileCardProps {
   user: UserProfile;
   onChatClick?: (user: { id?: string | number; name: string; avatar: string }) => void;
   blackBackground?: boolean;
+  chatDisabled?: boolean;
 }
 
 const UserProfileCard = ({
   user,
   onChatClick,
   blackBackground = false,
+  chatDisabled = false,
 }: UserProfileCardProps) => {
   return (
     <div
@@ -52,6 +54,7 @@ const UserProfileCard = ({
         <Button 
           variant="outline" 
           size="icon"
+          disabled={chatDisabled}
           onClick={() => onChatClick?.({ id: user.id, name: user.name, avatar: user.avatar })}
           className="shrink-0"
         >

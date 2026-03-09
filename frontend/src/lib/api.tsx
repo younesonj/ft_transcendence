@@ -158,10 +158,7 @@ export async function uploadAvatar(file: File) {
   formData.append("file", file);
   return axiosInstance.post<{ message: string; avatar: string; user: any }>(
     API.users.avatar,
-    formData,
-    {
-      headers: { "Content-Type": "multipart/form-data" },
-    }
+    formData
   );
 }
 
@@ -240,6 +237,29 @@ export interface ListingDto {
   updatedAt: string;
 }
 
+export interface ListingRecommendationsResponse {
+  recommendation?: ListingDto | null;
+  aiScore?: number;
+  algorithm?: "content_fallback" | "online_ml" | "collaborative" | string;
+  exploration?: boolean;
+  allListings?: ListingDto[];
+  recommendations?: ListingDto[];
+  message?: string;
+}
+
+export interface GenerateBioPayload {
+  hobbies: string;
+  personality: string;
+  lifestyle?: string;
+  looking_for?: string;
+}
+
+export interface GenerateBioResponse {
+  bio: string;
+  length: number;
+  generated_at: string;
+}
+
 export async function createListing(payload: CreateListingPayload) {
   return axiosInstance.post<{ message: string; listing: ListingDto }>(
     API.listings.root,
@@ -253,6 +273,12 @@ export async function fetchMyListings() {
 
 export async function fetchAllListings() {
   return axiosInstance.get<ListingDto[]>(API.listings.all);
+}
+
+export async function fetchListingRecommendations() {
+  return axiosInstance.get<ListingRecommendationsResponse>(
+    API.listings.recommendations
+  );
 }
 
 export async function fetchAllUsers() {
@@ -275,10 +301,7 @@ export async function uploadListingPhotos(id: number, files: File[]) {
   files.forEach((file) => formData.append("files", file));
   return axiosInstance.post<{ message: string; listing: ListingDto }>(
     API.listings.photos(id),
-    formData,
-    {
-      headers: { "Content-Type": "multipart/form-data" },
-    }
+    formData
   );
 }
 
@@ -303,6 +326,14 @@ export async function markChatThreadRead(withUserId: number) {
   return axiosInstance.post<{ updated: number }>(API.chat.messages.markRead(withUserId));
 }
 
+export async function generateBioWithAI(userId: number | string, payload: GenerateBioPayload) {
+  return axiosInstance.post<GenerateBioResponse>(API.ai.generateBio, payload, {
+    headers: {
+      "X-User-Id": String(userId),
+    },
+  });
+}
+
 /* ================================
    EXPORT
 ================================ */
@@ -319,6 +350,7 @@ export default {
   fetchAllUsers,
   fetchMyListings,
   fetchAllListings,
+  fetchListingRecommendations,
   updateListing,
   deleteListing,
   uploadListingPhotos,
@@ -326,6 +358,7 @@ export default {
   markChatThreadRead,
   fetchChatMessages,
   sendChatMessage,
+  generateBioWithAI,
 };
 
 export const api = axiosInstance;
