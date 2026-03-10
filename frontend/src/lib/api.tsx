@@ -55,9 +55,6 @@ const axiosInstance = axios.create({
 
     return rawBase.replace(/\/+$/, "").replace(/\/api$/, "");
   })(),
-  headers: {
-    "Content-Type": "application/json",
-  },
   withCredentials: true,
 }) as ApiClient;
 
@@ -157,7 +154,7 @@ export async function uploadAvatar(file: File) {
     formData,
     {
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": undefined,
       },
     }
   );

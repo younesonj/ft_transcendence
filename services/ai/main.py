@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -73,6 +74,17 @@ class FeedbackRequest(BaseModel):
 class ChatMessage(BaseModel):
     message: str
 
+class GenerateBioRequest(BaseModel):
+    hobbies: str
+    personality: str
+    lifestyle: str = ""
+    looking_for: str = ""
+
+class GenerateBioResponse(BaseModel):
+    bio: str
+    length: int
+    generated_at: str
+
 # ==========================================
 # 3. HEALTH / ROOT ENDPOINT
 # ==========================================
@@ -122,7 +134,59 @@ def get_model_status():
     return recommender.status
 
 # ==========================================
-# 4. AI CHATBOT ENDPOINT (LLM MODULE)
+# 5. BIO GENERATION ENDPOINT (LLM MODULE)
+# ==========================================
+@app.post("/api/ai/generate-bio")
+async def generate_bio(
+    request: GenerateBioRequest,
+    x_user_id: str = Header(default=None, description="User ID")
+):
+    """Generates a user bio using Gemini 2.5 Flash based on preferences."""
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized: Missing X-User-Id header")
+
+    try:
+        # Build the prompt
+        prompt = f"""Generate a short, friendly Discord-style bio for a roommate finder app based on these details:
+        
+Hobbies: {request.hobbies}
+Personality traits: {request.personality}
+Lifestyle: {request.lifestyle}
+Looking for: {request.looking_for}
+
+Requirements:
+- Keep it under 150 characters
+- Use a friendly, conversational tone
+- Be authentic and genuine
+- Include a mix of the hobbies/personality traits mentioned
+
+Return ONLY the bio text, nothing else."""
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                top_p=0.9,
+            )
+        )
+        
+        bio_text = response.text.strip()
+        
+        return {
+            "bio": bio_text,
+            "length": len(bio_text),
+            "generated_at": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logging.error(f"Bio generation error for user {x_user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate bio. Please try again later."
+        )
+
+# ==========================================
+# 6. AI CHATBOT ENDPOINT (LLM MODULE)
 # ==========================================
 @app.post("/api/ai/chat")
 async def chat_with_assistant(
