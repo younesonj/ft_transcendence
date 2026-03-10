@@ -62,9 +62,6 @@ const toCardListing = (listing: ListingDto) => ({
 const LoggedInListings = () => {
   const { user } = useAuth();
   const [listings, setListings] = useState<ReturnType<typeof toCardListing>[]>([]);
-  const [topMatch, setTopMatch] = useState<ReturnType<typeof toCardListing> | null>(null);
-  const [matchPercentage, setMatchPercentage] = useState<number | null>(null);
-  const [algorithmLabel, setAlgorithmLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUser, setChatUser] = useState<{ id?: string | number; name: string; avatar: string } | null>(null);
@@ -73,24 +70,6 @@ const LoggedInListings = () => {
     (async () => {
       try {
         const data = await api.fetchListingRecommendations();
-
-        if (data?.recommendation) {
-          setTopMatch(toCardListing(data.recommendation));
-        }
-
-        if (typeof data?.aiScore === "number") {
-          setMatchPercentage(Math.round(data.aiScore * 100));
-        }
-
-        const labels: Record<string, string> = {
-          content_fallback: "Profile Match",
-          online_ml: "Personalized for You",
-          collaborative: "Community Recommended",
-        };
-
-        if (data?.algorithm) {
-          setAlgorithmLabel(labels[data.algorithm] || data.algorithm);
-        }
 
         const sourceListings =
           data?.allListings && data.allListings.length > 0
@@ -141,15 +120,6 @@ const LoggedInListings = () => {
               Housing Listings
             </h1>
           </div>
-
-          {topMatch && (
-            <div className="mb-6 rounded-xl border border-primary/30 bg-primary/10 p-3">
-              <p className="text-sm font-medium text-primary">
-                ⭐ Perfect Match{matchPercentage !== null ? ` · ${matchPercentage}%` : ""}
-                {algorithmLabel ? ` · ${algorithmLabel}` : ""}
-              </p>
-            </div>
-          )}
 
           {listings.length > 0 ? (
             <div className="space-y-6">

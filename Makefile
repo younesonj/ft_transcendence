@@ -9,7 +9,7 @@ certs:
 
 up:
 	docker compose up --build -d
-	sudo chown -R 472:472 /home/ibougajd/Desktop/dll/infrastructure/grafana
+	sudo chown -R 472:472 ./infrastructure/grafana
 
 # Important: Clean everything including certs for a fresh start
 fclean:

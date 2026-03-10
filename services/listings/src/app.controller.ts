@@ -47,6 +47,18 @@ export class AppController {
         const userId = req.user.userId;
         return this.appService.getMyListings(userId);
     }
+    // Get listing recommendations for current user
+    @UseGuards(JwtAuthGuard)
+    @Get('recommendations')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get listing recommendations for the current user' })
+    @ApiResponse({ status: 200, description: 'Returns recommended listings' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    async getRecommendations(@Req() req: any) {
+        const userId = req.user.userId;
+        return this.appService.getRecommendations(userId);
+    }
+
     // Get listing by ID
     @Get(':id')
     @ApiOperation({ summary: 'Get listing by ID' })

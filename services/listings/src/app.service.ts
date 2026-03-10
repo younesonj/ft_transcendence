@@ -138,6 +138,35 @@ export class AppService {
         return listing;
     }
 
+    // Get listing recommendations for a user
+    async getRecommendations(userId: number) {
+        const allListings = await this.prisma.listing.findMany({
+            where: {
+                isActive: true,
+                userId: { not: userId },
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        username: true,
+                        name: true,
+                        avatar: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        const recommendation = allListings.length > 0 ? allListings[0] : null;
+
+        return {
+            recommendation,
+            allListings,
+            algorithm: 'content_fallback',
+        };
+    }
+
     // Get my listings
     async getMyListings(userId: number) {
         const listings = await this.prisma.listing.findMany({
