@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/components/ui/sonner";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useChatMessages } from "@/hooks/useChat";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Drawer,
   DrawerClose,
@@ -35,9 +37,8 @@ interface ChatDrawerProps {
 
 const ChatDrawer = ({ open, onOpenChange, user }: ChatDrawerProps) => {
   const { user: authUser } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
   const toNumericId = (value: unknown): number | null => {
@@ -52,46 +53,21 @@ const ChatDrawer = ({ open, onOpenChange, user }: ChatDrawerProps) => {
   const chatPartnerId = toNumericId(user?.id);
   const currentUserId = toNumericId(authUser?.id);
 
-  useEffect(() => {
-    setNewMessage("");
-    setMessages([]);
-  }, [chatPartnerId]);
+  const { data: rawMessages, isLoading: loading } = useChatMessages(
+    chatPartnerId,
+    open && !!chatPartnerId && !!currentUserId,
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadMessages = async () => {
-      if (!open || !chatPartnerId || !currentUserId) {
-        setMessages([]);
-        return;
-      }
-      setLoading(true);
-      try {
-        const rows = await api.fetchChatMessages(chatPartnerId);
-        if (cancelled) return;
-        setMessages(
-          rows.map((row) => ({
-            id: String(row.id),
-            text: row.content,
-            sender: row.senderId === currentUserId ? "me" : "them",
-            timestamp: new Date(row.createdAt),
-          })),
-        );
-      } catch (error: any) {
-        if (cancelled) return;
-        setMessages([]);
-        toast.error(error?.message || "Failed to load chat messages");
-      } finally {
-        if (cancelled) return;
-        setLoading(false);
-      }
-    };
-
-    void loadMessages();
-    return () => {
-      cancelled = true;
-    };
-  }, [chatPartnerId, currentUserId, open]);
+  const messages: Message[] = useMemo(
+    () =>
+      (rawMessages ?? []).map((row) => ({
+        id: String(row.id),
+        text: row.content,
+        sender: row.senderId === currentUserId ? ("me" as const) : ("them" as const),
+        timestamp: new Date(row.createdAt),
+      })),
+    [rawMessages, currentUserId],
+  );
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
@@ -105,20 +81,21 @@ const ChatDrawer = ({ open, onOpenChange, user }: ChatDrawerProps) => {
     setSending(true);
     try {
       const saved = await api.sendChatMessage(chatPartnerId, content);
-      const message: Message = {
-        id: String(saved.id),
-        text: saved.content,
-        sender: saved.senderId === currentUserId ? "me" : "them",
-        timestamp: new Date(saved.createdAt),
-      };
-      setMessages((prev) => [...prev, message]);
+      queryClient.setQueryData(
+        ["chatMessages", chatPartnerId],
+        (old: any[] | undefined) => {
+          if (!old) return [saved];
+          if (old.some((m: any) => m.id === saved.id)) return old;
+          return [...old, saved];
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: ["chatInbox"] });
     } catch (error: any) {
       setNewMessage(content);
       toast.error(error?.message || "Failed to send message");
     } finally {
       setSending(false);
     }
-
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

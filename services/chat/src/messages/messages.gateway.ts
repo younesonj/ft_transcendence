@@ -39,6 +39,17 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     console.log(`Client ${client.id} joined room ${roomName}`);
   }
 
+  /** Let a user join their personal room so they receive notifications for ANY conversation */
+  @SubscribeMessage('joinUser')
+  handleJoinUser(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { userId: number },
+  ) {
+    const userRoom = `user_${data.userId}`;
+    client.join(userRoom);
+    console.log(`Client ${client.id} joined personal room ${userRoom}`);
+  }
+
   @SubscribeMessage('sendMessage')
   async handleMessage(
     @ConnectedSocket() client: Socket,
@@ -50,10 +61,18 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       data.content,
     );
 
-    const roomName = this.getRoomName(data.senderId, data.receiverId);
-    this.server.to(roomName).emit('newMessage', message);
+    this.emitNewMessage(data.senderId, data.receiverId, message);
 
     return message;
+  }
+
+  /** Emit a newMessage event to the conversation room AND both users' personal rooms */
+  emitNewMessage(senderId: number, receiverId: number, message: any) {
+    const roomName = this.getRoomName(senderId, receiverId);
+    this.server.to(roomName).emit('newMessage', message);
+    // Also emit to each user's personal room so inbox badges update in real time
+    this.server.to(`user_${senderId}`).emit('newMessage', message);
+    this.server.to(`user_${receiverId}`).emit('newMessage', message);
   }
 
   private getRoomName(userId1: number, userId2: number): string {

@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
+import { ChatSocketProvider } from "@/lib/chatSocket";
 import MusicPlayer from "@/components/MusicPlayer";
 import Index from "./pages/Index";
 import FindRoommates from "./pages/FindRoommates";
@@ -41,6 +42,7 @@ const ListingsRoute = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ChatSocketProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -63,6 +65,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+    </ChatSocketProvider>
   </QueryClientProvider>
 );
 

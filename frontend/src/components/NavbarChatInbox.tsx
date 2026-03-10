@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, MessageCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import api, { type ChatInboxItemDto } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { resolveAvatar } from "@/lib/avatar";
 import ChatPopup from "@/components/ChatPopup";
+import { useChatInbox } from "@/hooks/useChat";
+import { useQueryClient } from "@tanstack/react-query";
 
 type IncomingMessage = {
   id: number;
@@ -40,49 +42,19 @@ const toIncoming = (items: ChatInboxItemDto[]): IncomingMessage[] =>
 
 const NavbarChatInbox = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<IncomingMessage[]>([]);
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupUser, setPopupUser] = useState<{ id?: string | number; name: string; avatar: string } | null>(null);
+
+  const { data: inboxData, isLoading: loading } = useChatInbox(!!user);
+
+  const messages = useMemo(() => toIncoming(inboxData ?? []), [inboxData]);
 
   const unreadCount = useMemo(
     () => messages.reduce((sum, item) => sum + item.unreadCount, 0),
     [messages],
   );
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const rows = await api.fetchChatInbox();
-        if (!cancelled) {
-          setMessages(toIncoming(rows));
-        }
-      } catch {
-        if (!cancelled) {
-          setMessages([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
-    const timer = window.setInterval(() => {
-      void load();
-    }, 10000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [user]);
 
   return (
     <>
@@ -126,22 +98,20 @@ const NavbarChatInbox = () => {
                     type="button"
                     key={message.id}
                     className="w-full text-left rounded-lg p-2.5 transition-colors hover:bg-white/10"
-                    onClick={async () => {
-                      // Optimistic unread update for immediate badge refresh
-                      setMessages((prev) =>
-                        prev.map((item) =>
-                          item.id === message.id ? { ...item, unreadCount: 0 } : item,
-                        ),
+                    onClick={() => {
+                      // Optimistic unread update via query cache
+                      queryClient.setQueryData<ChatInboxItemDto[]>(
+                        ["chatInbox"],
+                        (old) =>
+                          old?.map((item) =>
+                            item.senderId === message.id
+                              ? { ...item, unreadCount: 0 }
+                              : item,
+                          ),
                       );
 
-                      void api.markChatThreadRead(message.id).catch(async () => {
-                        // Re-sync from server if mark-read fails
-                        try {
-                          const rows = await api.fetchChatInbox();
-                          setMessages(toIncoming(rows));
-                        } catch {
-                          // Keep optimistic state if refetch also fails
-                        }
+                      void api.markChatThreadRead(message.id).catch(() => {
+                        queryClient.invalidateQueries({ queryKey: ["chatInbox"] });
                       });
 
                       setPopupUser({
