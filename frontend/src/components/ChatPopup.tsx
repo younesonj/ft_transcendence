@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Send, X, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "@/components/ui/sonner";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { useChatMessages } from "@/hooks/useChat";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Message {
   id: string;
@@ -29,17 +31,60 @@ interface ChatPopupProps {
 
 const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
   const { user: authUser } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const [minimized, setMinimized] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [backendEnabled, setBackendEnabled] = useState(false);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const openRef = useRef(open);
   const minimizedRef = useRef(minimized);
   const titleRef = useRef<string>(typeof document !== "undefined" ? document.title : "");
+
+  const toNumericId = (value: unknown): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number.parseInt(value, 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  };
+
+  const chatPartnerId = toNumericId(user?.id);
+  const currentUserId = toNumericId(authUser?.id);
+
+  // Real-time messages via useQuery + Socket.IO
+  const { data: rawMessages, isLoading: loading, isSuccess } = useChatMessages(
+    chatPartnerId,
+    open && !!chatPartnerId && !!currentUserId,
+  );
+
+  const backendEnabled = isSuccess;
+
+  const messages: Message[] = useMemo(
+    () =>
+      (rawMessages ?? []).map((row) => ({
+        id: String(row.id),
+        text: row.content,
+        sender: row.senderId === currentUserId ? ("me" as const) : ("them" as const),
+        timestamp: new Date(row.createdAt),
+      })),
+    [rawMessages, currentUserId],
+  );
+
+  // Mark unread messages as read when the popup is open
+  useEffect(() => {
+    if (!open || !chatPartnerId || !currentUserId || !rawMessages) return;
+    const hasUnreadIncoming = rawMessages.some(
+      (row) =>
+        row.senderId === chatPartnerId &&
+        row.receiverId === currentUserId &&
+        (row as any).isRead === false,
+    );
+    if (hasUnreadIncoming) {
+      void api.markChatThreadRead(chatPartnerId);
+    }
+  }, [open, chatPartnerId, currentUserId, rawMessages]);
 
   useEffect(() => {
     openRef.current = open;
@@ -87,83 +132,6 @@ const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
     return () => window.cancelAnimationFrame(id);
   }, [messages, open, minimized]);
 
-  const toNumericId = (value: unknown): number | null => {
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string" && value.trim()) {
-      const parsed = Number.parseInt(value, 10);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return null;
-  };
-
-  const chatPartnerId = toNumericId(user?.id);
-  const currentUserId = toNumericId(authUser?.id);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const syncMessages = async (showErrors: boolean) => {
-      if (!open || !chatPartnerId || !currentUserId) {
-        if (!cancelled) {
-          setBackendEnabled(false);
-          setMessages([]);
-        }
-        return;
-      }
-
-      if (!cancelled && showErrors) {
-        setLoading(true);
-      }
-
-      try {
-        const rows = await api.fetchChatMessages(chatPartnerId);
-        if (cancelled) return;
-
-        setMessages(
-          rows.map((row: any) => ({
-            id: String(row.id),
-            text: row.content,
-            sender: row.senderId === currentUserId ? "me" : "them",
-            timestamp: new Date(row.createdAt),
-          }))
-        );
-        setBackendEnabled(true);
-
-        // If the popup is open for this user, incoming unread messages should become read.
-        const hasUnreadIncoming = rows.some(
-          (row: any) =>
-            row.senderId === chatPartnerId &&
-            row.receiverId === currentUserId &&
-            row.isRead === false
-        );
-        if (hasUnreadIncoming) {
-          await api.markChatThreadRead(chatPartnerId);
-        }
-      } catch (error: any) {
-        if (cancelled) return;
-        setBackendEnabled(false);
-        if (showErrors) {
-          setMessages([]);
-          toast.error(error?.message || "Failed to load chat messages");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void syncMessages(true);
-    const timer = window.setInterval(() => {
-      void syncMessages(false);
-    }, 2500);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [open, chatPartnerId, currentUserId]);
-
   const handleSend = async () => {
     if (!newMessage.trim()) return;
     if (!chatPartnerId || !currentUserId) {
@@ -175,15 +143,20 @@ const ChatPopup = ({ open, onClose, user }: ChatPopupProps) => {
     setNewMessage("");
     setSending(true);
     try {
+      // Send via REST; the backend gateway will emit newMessage to the room
+      // which our socket listener will pick up and append to the cache.
       const saved = await api.sendChatMessage(chatPartnerId, content);
-      const message: Message = {
-        id: String(saved.id),
-        text: saved.content,
-        sender: saved.senderId === currentUserId ? "me" : "them",
-        timestamp: new Date(saved.createdAt),
-      };
-      setMessages((prev) => [...prev, message]);
-      setBackendEnabled(true);
+
+      // Optimistically add the message to the query cache
+      queryClient.setQueryData(
+        ["chatMessages", chatPartnerId],
+        (old: any[] | undefined) => {
+          if (!old) return [saved];
+          if (old.some((m: any) => m.id === saved.id)) return old;
+          return [...old, saved];
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: ["chatInbox"] });
     } catch (error: any) {
       setNewMessage(content);
       toast.error(error?.message || "Failed to send message");
