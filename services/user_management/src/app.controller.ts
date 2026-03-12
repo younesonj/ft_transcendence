@@ -4,14 +4,14 @@ import { AppService } from './app.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { CompleteProfileDto } from './dto/complete-profile.dto';  // ← ADD THIS
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';  // ← ADD
+import { CompleteProfileDto } from './dto/complete-profile.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from './config/multer.config';
 
 
 
-@ApiTags('User Management')  // ← ADD
+@ApiTags('User Management')
 @Controller()
 export class AppController {
     constructor(private readonly appService: AppService) {}
@@ -167,7 +167,7 @@ export class AppController {
         const userId = req.user.userId;
         return this.appService.changePassword(userId, changePasswordDto);
     }
-    // ========== COMPLETE PROFILE (NEW) ==========
+    // ========== COMPLETE PROFILE ==========
     @UseGuards(JwtAuthGuard)
     @Post('complete-profile')
     @ApiBearerAuth()

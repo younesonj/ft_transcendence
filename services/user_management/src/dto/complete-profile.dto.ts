@@ -25,7 +25,6 @@ export class CompleteProfileDto {
     @Max(100)
     age: number;
 
-    // ========== ADD THIS ==========
     @ApiProperty({ 
         example: 'male', 
         description: 'Sex/Gender',
@@ -35,7 +34,6 @@ export class CompleteProfileDto {
     @IsNotEmpty()
     @IsIn(['male', 'female', 'other'])
     sex: string;
-    // ==============================
 
     @ApiProperty({ example: 'Casablanca', description: 'Preferred location' })
     @IsString()

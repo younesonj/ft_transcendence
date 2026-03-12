@@ -74,8 +74,8 @@ export class AppService {
                 id: true,
                 email: true,
                 username: true,
-                name: true,      // ← Changed from firstName
-                age: true,       // ← Added
+                name: true,
+                age: true,
                 avatar: true,
                 bio: true,
                 isOnline: true,

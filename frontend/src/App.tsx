@@ -60,7 +60,6 @@ const App = () => (
           <Route path="/auth/error" element={<AuthCallback />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/signup" element={<Signup />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

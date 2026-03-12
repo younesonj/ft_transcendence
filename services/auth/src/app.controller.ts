@@ -6,7 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { Intra42AuthGuard } from './guards/intra42-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
-import { Response, Request } from 'express';  // ← Add Response
+import { Response, Request } from 'express';
 
 @Controller()
 export class AppController {
@@ -110,7 +110,7 @@ export class AppController {
         };
     }
 
-  // ========== LOGOUT (NEW) ==========
+    // ========== LOGOUT ==========
     @Post('logout')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Logout user' })
@@ -128,7 +128,7 @@ export class AppController {
         return { message: 'Logged out successfully' };
     }
 
-    // ========== NEW: PROTECTED ROUTE ==========
+    // ========== PROTECTED ROUTE ==========
     @UseGuards(JwtAuthGuard)
     @Get('profile')
     @ApiBearerAuth()
@@ -148,7 +148,7 @@ export class AppController {
         }
     })
     @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-    testProtected(@Req() req: any) {  // ← Changed Request to any
+    testProtected(@Req() req: any) {
         return {
             message: 'This is a protected route!',
             user: req.user,
@@ -196,7 +196,7 @@ export class AppController {
             res.redirect(`${frontendUrl}/auth/error`);
         }
     }
-   // ========== GOOGLE OAUTH ENDPOINTS ========== (ADD THESE)
+    // ========== GOOGLE OAUTH ENDPOINTS ==========
     
     @Get('google')
     @UseGuards(GoogleAuthGuard)

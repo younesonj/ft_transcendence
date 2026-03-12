@@ -22,7 +22,7 @@ export class UpdateProfileDto {
     @IsOptional()
     @Min(18)
     @Max(100)
-    age?: number;  // ← NEW
+    age?: number;
 
     @ApiProperty({ example: '42 student looking for roommate', description: 'Bio', required: false })
     @IsOptional()

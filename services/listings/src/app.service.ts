@@ -2,8 +2,8 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from './prisma.service';
 import { CreateListingDto } from './dto/create-listing.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
-import * as fs from 'fs';      // ← ADD
-import * as path from 'path';  // ← ADD
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class AppService {

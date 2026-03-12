@@ -18,7 +18,7 @@ model User {
   age               Int?     // Age
   avatar            String   @default("default-avatar.png")
   bio               String?
-  sex               String?  // ← ADD THIS: "male", "female", "other"
+  sex               String?
   
   // OAuth
   googleId          String?  @unique
@@ -53,7 +53,7 @@ model UserPreferences {
   location        String?
   moveInDate      DateTime?
   budget          Int?
-  currency        String?  @default("EUR")  // ← ADD THIS: EUR, USD, MAD, CHF, GBP, etc.
+  currency        String?  @default("EUR")
   
   // Lifestyle preferences
   smoker          Boolean  @default(false)
@@ -118,7 +118,7 @@ model Listing {
   @@index([isActive])
 }
 
-// Messaging model (NEW)
+// Messaging model
 model Message {
   id         Int      @id @default(autoincrement())
   content    String

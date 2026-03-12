@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';  // ← ADD
-import * as cookieParser from 'cookie-parser';  // ← ADD
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
 import * as promClient from 'prom-client';
 
 async function bootstrap() {
@@ -64,21 +64,21 @@ async function bootstrap() {
 
     app.setGlobalPrefix('api/auth');
 
-    // ========== SWAGGER SETUP ========== ← ADD THIS
+    // ========== SWAGGER SETUP ==========
     const config = new DocumentBuilder()
         .setTitle('Auth Service API')
         .setDescription('Authentication and OAuth endpoints')
         .setVersion('1.0')
-        .addBearerAuth()  // For JWT token
+        .addBearerAuth()
         .addTag('auth')
         .build();
     
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api/auth/docs', app, document);  // Available at /api/auth/docs
+    SwaggerModule.setup('api/auth/docs', app, document);
     // ====================================
 
     await app.listen(port);
     console.log(`Auth Service running on port ${port}`);
-    console.log(`📚 Swagger docs: http://localhost:${port}/api/auth/docs`);  // ← ADD THIS
+    console.log(`📚 Swagger docs: http://localhost:${port}/api/auth/docs`);
 }
 bootstrap();

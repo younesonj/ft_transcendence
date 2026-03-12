@@ -3,10 +3,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
-import { PassportModule } from '@nestjs/passport';  // ← NEW
-import { JwtStrategy } from './strategies/jwt.strategy';  // ← NEW
-import { Intra42Strategy } from './strategies/intra42.strategy';  // ← NEW
-import { GoogleStrategy } from './strategies/google.strategy';  // ← Add this
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { Intra42Strategy } from './strategies/intra42.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 
 
@@ -21,6 +21,6 @@ import { GoogleStrategy } from './strategies/google.strategy';  // ← Add this
         }),
     ],
     controllers: [AppController],
-    providers: [AppService, PrismaService, JwtStrategy, Intra42Strategy, GoogleStrategy],  // ← NEW: Register strategies as providers
+    providers: [AppService, PrismaService, JwtStrategy, Intra42Strategy, GoogleStrategy],
 })
 export class AppModule { }

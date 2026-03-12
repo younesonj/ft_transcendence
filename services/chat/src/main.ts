@@ -48,7 +48,7 @@ async function bootstrap() {
         ].filter(Boolean),
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
-        credentials: true,  // ← IMPORTANT: Allow cookies
+        credentials: true,
     });
 
   await app.listen(process.env.CHAT_SERVICE_PORT || 3001);

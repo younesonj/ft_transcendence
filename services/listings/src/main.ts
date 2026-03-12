@@ -2,9 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { NestExpressApplication } from '@nestjs/platform-express';  // ← ADD
-import { join } from 'path';  // ← ADD
-import * as cookieParser from 'cookie-parser'; // ← ADD
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import * as cookieParser from 'cookie-parser';
 import * as promClient from 'prom-client';
 
 
@@ -13,7 +13,7 @@ import * as promClient from 'prom-client';
 
 async function bootstrap() {
     const port = process.env.LISTINGS_SERVICE_PORT || 3005;
-    const app = await NestFactory.create<NestExpressApplication>(AppModule);  // ← CHANGE
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
     // ========== PROMETHEUS METRICS ==========
     promClient.collectDefaultMetrics({ prefix: 'listings_' });
@@ -56,7 +56,7 @@ async function bootstrap() {
         credentials: true,
     });
 
-    // ========== SERVE STATIC FILES ========== (ADD THIS)
+    // ========== SERVE STATIC FILES ==========
     app.useStaticAssets(join(__dirname, '..', 'uploads'), {
         prefix: '/uploads/',
     });
